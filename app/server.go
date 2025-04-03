@@ -2,24 +2,35 @@ package main
 
 import (
 	"fmt"
+	"github.com/codecrafters-io/redis-starter-go/app/config"
+	"github.com/codecrafters-io/redis-starter-go/app/tcpserver"
 	"io"
 	"net"
 	"os"
 )
 
 func main() {
-	host := "0.0.0.0"
-	port := "6379"
 
-	serverAddress := fmt.Sprintf("%s:%s", host, port)
-	l := startServerAndReturnConnection(serverAddress)
-	handleServerRequest(l)
+	appConfig, err := config.NewAppConfig()
+	if err != nil {
+		fmt.Println("Error reading config file: ", err.Error())
+		os.Exit(1)
+	}
+	serverAddress := fmt.Sprintf("%s:%s", appConfig.GetHost(), appConfig.GetPort())
+
+	server, err := tcpserver.NewServer(serverAddress)
+	if err != nil {
+		fmt.Println("Error creating server: ", err.Error())
+		os.Exit(1)
+	}
+
+	server.Start()
 }
 
 func startServerAndReturnConnection(serverAddress string) net.Listener {
 	listener, err := net.Listen("tcp", serverAddress)
 	if err != nil {
-		fmt.Println("Failed to bind to port 6379")
+		fmt.Println("failed to bind to server address", serverAddress, " : ", err)
 		os.Exit(1)
 	}
 	fmt.Printf("server started at %s\n", serverAddress)
