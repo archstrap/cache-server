@@ -1,39 +1,42 @@
 package tcpserver
 
 import (
-	"fmt"
+	"github.com/codecrafters-io/redis-starter-go/app/eventloop"
+	"log"
 	"net"
 )
 
 type Server struct {
-	listener net.Listener
-	address  string
+	address   string
+	eventLoop *eventloop.EventLoop
+}
+
+func NewServer(address string, maxParallelization int) *Server {
+	return &Server{
+		address: address,
+		eventLoop: &eventloop.EventLoop{
+			Tasks: make(chan eventloop.RedisTask, maxParallelization)}}
 }
 
 func (server *Server) Start() {
-
-	fmt.Printf("server started at %s\n", server.address)
-	connection, err := server.listener.Accept()
+	// 1. address -> start the server on the preferred location
+	listener, err := net.Listen("tcp", server.address)
 	if err != nil {
-		fmt.Println("Error accepting connection: ", err.Error())
+		log.Fatalf("Failed to start server at address: %s. Error Details: %v\n", server.address, err)
 	}
-	fmt.Printf("Handling client: %v\n", connection.RemoteAddr())
+	log.Println("Server started at:", server.address)
+
+	// 2. run the event loop in a separate go-routine
+	eventLoop := server.eventLoop
+	go eventLoop.Start()
+
+	// 3. current go-routine will monitor the incoming tasks
+
 	for {
-		buf := make([]byte, 1024)
-		n, err := connection.Read(buf)
+		conn, err := listener.Accept()
 		if err != nil {
-			fmt.Println("Error", err)
 		}
-
-		receivedMessage := string(buf[:n])
-		fmt.Println(receivedMessage)
+		task := eventloop.RedisTask{Connection: conn}
+		eventLoop.AddEvent(task)
 	}
-}
-
-func NewServer(address string) (*Server, error) {
-	conn, err := net.Listen("tcp", address)
-	if err != nil {
-		fmt.Printf("Unable to bind %v to tcp server", address)
-	}
-	return &Server{listener: conn, address: address}, nil
 }
