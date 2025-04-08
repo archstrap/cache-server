@@ -31,6 +31,12 @@ func (server *Server) Start() {
 	go eventLoop.Start()
 
 	// 3. current go-routine will monitor the incoming tasks
+	handleIncomingRequests(listener, eventLoop)
+}
+
+func handleIncomingRequests(
+	listener net.Listener,
+	eventLoop *eventloop.EventLoop) {
 
 	for {
 		conn, err := listener.Accept()
