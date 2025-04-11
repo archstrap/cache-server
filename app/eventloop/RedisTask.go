@@ -1,7 +1,7 @@
 package eventloop
 
 import (
-	"fmt"
+	"log"
 	"net"
 )
 
@@ -12,7 +12,7 @@ type RedisTask struct {
 func (redisTask *RedisTask) execute() {
 	connection := redisTask.Connection
 
-	fmt.Println("Processing command from:", connection.RemoteAddr())
+	log.Println("Processing command from:", connection.RemoteAddr())
 
 	for {
 
@@ -20,12 +20,17 @@ func (redisTask *RedisTask) execute() {
 		n, err := connection.Read(buffer)
 
 		if err != nil {
-			fmt.Errorf("Error occurred. Details:", err)
+			log.Println("Error occurred. Details:", err)
+			break
 		}
 		receivedMessage := string(buffer[:n])
-		fmt.Println("Received Command: %s", receivedMessage)
+		log.Println("Received Command:", receivedMessage)
 
-		connection.Write([]byte("+OK\r\n"))
+		_, err = connection.Write([]byte("+OK\r\n"))
+
+		if err != nil {
+			log.Fatalln("Error occurred while trying to write commands. Error details:", err)
+		}
 	}
-
+	
 }

@@ -4,15 +4,14 @@ import (
 	"fmt"
 	"github.com/codecrafters-io/redis-starter-go/app/config"
 	"github.com/codecrafters-io/redis-starter-go/app/tcpserver"
-	"os"
+	"log"
 )
 
 func main() {
 
 	appConfig, err := config.NewAppConfig()
 	if err != nil {
-		fmt.Println("Error reading config file: ", err.Error())
-		os.Exit(1)
+		log.Fatalln("Error reading config file: ", err.Error())
 	}
 	serverAddress := fmt.Sprintf("%s:%s", appConfig.GetHost(), appConfig.GetPort())
 

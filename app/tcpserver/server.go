@@ -41,8 +41,10 @@ func handleIncomingRequests(
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
+			log.Println("Error occurred while accepting a connection..........")
+		} else {
+			task := eventloop.RedisTask{Connection: conn}
+			eventLoop.AddEvent(task)
 		}
-		task := eventloop.RedisTask{Connection: conn}
-		eventLoop.AddEvent(task)
 	}
 }

@@ -1,6 +1,8 @@
 package eventloop
 
-import "fmt"
+import (
+	"log"
+)
 
 type EventLoop struct {
 	Tasks chan RedisTask
@@ -11,10 +13,12 @@ func (eventLoop *EventLoop) AddEvent(redisTask RedisTask) {
 }
 
 func (eventLoop *EventLoop) Start() {
+
+	log.Println("EventLoop started...........")
+
 	for {
 		select {
 		case redisTask := <-eventLoop.Tasks:
-			fmt.Print("task is getting executed! ")
 			go redisTask.execute()
 		}
 	}
