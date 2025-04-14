@@ -5,6 +5,8 @@ import (
 	"github.com/codecrafters-io/redis-starter-go/app/config"
 	"github.com/codecrafters-io/redis-starter-go/app/tcpserver"
 	"log"
+	"os"
+	"os/signal"
 )
 
 func main() {
@@ -13,10 +15,30 @@ func main() {
 	if err != nil {
 		log.Fatalln("Error reading config file: ", err.Error())
 	}
+
+	shutdownSignal := make(chan struct{})
+
+	go graceFullyShutDown(shutdownSignal)
+
 	serverAddress := fmt.Sprintf("%s:%s", appConfig.GetHost(), appConfig.GetPort())
 
 	server := tcpserver.NewServer(serverAddress, 10)
 
-	server.Start()
+	server.Start(shutdownSignal)
 
+}
+
+func graceFullyShutDown(shutDownSignal chan struct{}) {
+
+	sigChan := make(chan os.Signal, 1)
+
+	signal.Notify(sigChan, os.Interrupt)
+
+	log.Println("App is running press CTRL+C to exit")
+
+	receivedSignal := <-sigChan
+	log.Println("Received signal:", receivedSignal)
+	log.Println("App is shutting down gracefully..................")
+
+	close(shutDownSignal)
 }
