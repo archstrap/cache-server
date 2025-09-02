@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+
 	"github.com/spf13/viper"
 )
 
@@ -24,7 +25,7 @@ func NewAppConfig() (*AppConfig, error) {
 	viper.AddConfigPath("./resources")
 
 	if err := viper.ReadInConfig(); err != nil {
-		return nil, fmt.Errorf("Error reading config file: %w", err)
+		return nil, fmt.Errorf("error reading config file: %w", err)
 	}
 
 	return &AppConfig{

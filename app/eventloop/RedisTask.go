@@ -1,8 +1,11 @@
 package eventloop
 
 import (
+	"fmt"
 	"log"
 	"net"
+
+	"github.com/codecrafters-io/redis-starter-go/app/parser"
 )
 
 type RedisTask struct {
@@ -24,13 +27,22 @@ func (redisTask *RedisTask) execute() {
 			break
 		}
 		receivedMessage := string(buffer[:n])
-		log.Println("Received Command:", receivedMessage)
 
-		_, err = connection.Write([]byte("+OK\r\n"))
+		parser := parser.InputParser{InputMessage: receivedMessage}
+
+		var outputMessage string
+		result, err := parser.Parse()
+
+		if err != nil {
+			outputMessage = fmt.Sprintf("-%s\r\n", err.Error())
+		} else {
+			outputMessage = fmt.Sprintf("+%s\r\n", result)
+		}
+		_, err = connection.Write([]byte(outputMessage))
 
 		if err != nil {
 			log.Fatalln("Error occurred while trying to write commands. Error details:", err)
 		}
 	}
-	
+
 }

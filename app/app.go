@@ -2,11 +2,13 @@ package main
 
 import (
 	"fmt"
-	"github.com/codecrafters-io/redis-starter-go/app/config"
-	"github.com/codecrafters-io/redis-starter-go/app/tcpserver"
 	"log"
 	"os"
 	"os/signal"
+	"syscall"
+
+	"github.com/codecrafters-io/redis-starter-go/app/config"
+	"github.com/codecrafters-io/redis-starter-go/app/tcpserver"
 )
 
 func main() {
@@ -32,7 +34,7 @@ func graceFullyShutDown(shutDownSignal chan struct{}) {
 
 	sigChan := make(chan os.Signal, 1)
 
-	signal.Notify(sigChan, os.Interrupt)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
 
 	log.Println("App is running press CTRL+C to exit")
 

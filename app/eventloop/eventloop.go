@@ -16,15 +16,40 @@ func (eventLoop *EventLoop) Start(shutDownSignal <-chan struct{}) {
 
 	log.Println("EventLoop started...........")
 
-loop:
-	for {
-		select {
-		case redisTask := <-eventLoop.Tasks:
+	for task := range orDone(shutDownSignal, eventLoop.Tasks) {
+		if redisTask, ok := task.(RedisTask); ok {
 			go redisTask.execute()
-		case <-shutDownSignal:
-			break loop
 		}
 	}
 
 	log.Println("EventLoop terminated")
+}
+
+func orDone(done <-chan struct{}, dataChannel <-chan RedisTask) chan interface{} {
+
+	relayStreams := make(chan interface{})
+
+	go func() {
+		defer close(relayStreams)
+
+		for {
+			select {
+			case <-done:
+				return
+			case data, ok := <-dataChannel:
+				if !ok {
+					return
+				}
+
+				select {
+				case relayStreams <- data:
+				case <-done:
+					return
+				}
+			}
+		}
+	}()
+
+	return relayStreams
+
 }

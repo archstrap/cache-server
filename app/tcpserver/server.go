@@ -1,11 +1,13 @@
 package tcpserver
 
 import (
-	"github.com/codecrafters-io/redis-starter-go/app/eventloop"
+	"fmt"
 	"log"
 	"net"
 	"strings"
 	"sync"
+
+	"github.com/codecrafters-io/redis-starter-go/app/eventloop"
 )
 
 type Server struct {
@@ -20,19 +22,33 @@ func NewServer(address string, maxParallelization int) *Server {
 			Tasks: make(chan eventloop.RedisTask, maxParallelization)}}
 }
 
+func printBanner() {
+	fmt.Print(`
+	██╗  ██╗ █████╗ ██╗     ██╗███╗   ██╗██████╗ ██╗    ██████╗ ██████╗ 
+	██║ ██╔╝██╔══██╗██║     ██║████╗  ██║██╔══██╗██║    ██╔══██╗██╔══██╗
+	█████╔╝ ███████║██║     ██║██╔██╗ ██║██║  ██║██║    ██║  ██║██████╔╝
+	██╔═██╗ ██╔══██║██║     ██║██║╚██╗██║██║  ██║██║    ██║  ██║██╔══██╗
+	██║  ██╗██║  ██║███████╗██║██║ ╚████║██████╔╝██║    ██████╔╝██████╔╝
+	╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚═╝╚═╝  ╚═══╝╚═════╝ ╚═╝    ╚═════╝ ╚═════╝
+
+`)
+}
+
 func (server *Server) Start(shutDownSignal <-chan struct{}) {
 	// 1. address -> start the server on the preferred location
 	listener, err := net.Listen("tcp", server.address)
 	if err != nil {
 		log.Fatalf("Failed to start server at address: %s. Error Details: %v\n", server.address, err)
 	}
+	// print banner
+	printBanner()
 	log.Println("Server started at:", server.address)
 
 	// 2. run the event loop in a separate go-routine
 	eventLoop := server.eventLoop
 	go eventLoop.Start(shutDownSignal)
 
-	// 3. current go-routine will monitor the incoming tasks
+	// 3. The current go-routine will monitor the incoming tasks
 	var wg sync.WaitGroup
 	wg.Add(1)
 
@@ -41,7 +57,10 @@ func (server *Server) Start(shutDownSignal <-chan struct{}) {
 	go func() {
 		<-shutDownSignal
 		log.Println("Closing the listener")
-		listener.Close()
+		err := listener.Close()
+		if err != nil {
+			return
+		}
 	}()
 
 	wg.Wait()
