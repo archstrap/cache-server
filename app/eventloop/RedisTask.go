@@ -28,10 +28,10 @@ func (redisTask *RedisTask) execute() {
 		}
 		receivedMessage := string(buffer[:n])
 
-		parser := parser.InputParser{InputMessage: receivedMessage}
+		inputParser := parser.InputParser{InputMessage: receivedMessage}
 
 		var outputMessage string
-		result, err := parser.Parse()
+		result, err := inputParser.Parse()
 
 		if err != nil {
 			outputMessage = fmt.Sprintf("-%s\r\n", err.Error())

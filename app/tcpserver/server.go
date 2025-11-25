@@ -52,18 +52,22 @@ func (server *Server) Start(shutDownSignal <-chan struct{}) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 
+	go closeClientConnection(shutDownSignal, listener)
 	go handleIncomingRequests(listener, eventLoop, &wg)
 
-	go func() {
-		<-shutDownSignal
-		log.Println("Closing the listener")
-		err := listener.Close()
-		if err != nil {
-			return
-		}
-	}()
-
 	wg.Wait()
+}
+
+func closeClientConnection(shutDownSignal <-chan struct{}, listener net.Listener) {
+	<-shutDownSignal
+	log.Println("Closing the listener")
+	if listener == nil {
+		return
+	}
+	err := listener.Close()
+	if err != nil {
+		return
+	}
 }
 
 func handleIncomingRequests(
