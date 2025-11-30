@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/codecrafters-io/redis-starter-go/internal/eventloop"
+	"github.com/archstrap/cache-server/internal/eventloop"
 )
 
 type Server struct {

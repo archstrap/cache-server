@@ -6,7 +6,7 @@
 //
 // DON'T EDIT THIS!
 
-module github.com/codecrafters-io/redis-starter-go
+module github.com/archstrap/cache-server
 
 go 1.23.0
 
