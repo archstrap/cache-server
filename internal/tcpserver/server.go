@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/codecrafters-io/redis-starter-go/app/eventloop"
+	"github.com/codecrafters-io/redis-starter-go/internal/eventloop"
 )
 
 type Server struct {

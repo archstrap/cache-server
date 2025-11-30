@@ -5,7 +5,7 @@ import (
 	"log"
 	"net"
 
-	"github.com/codecrafters-io/redis-starter-go/app/parser"
+	"github.com/codecrafters-io/redis-starter-go/internal/parser"
 )
 
 type RedisTask struct {
