@@ -17,7 +17,7 @@ func (p *InputParser) Parse() (string, error) {
 		log.Fatalln("Hey there, received an empty command")
 	}
 
-	// log.Println("input messsage", inputMessage)
+	log.Println("input messsage", inputMessage)
 
 	tokens := strings.Split(inputMessage, "\r\n")
 	log.Println("tokens: ", tokens)
@@ -38,7 +38,7 @@ func (p *InputParser) Parse() (string, error) {
 	case "ECHO":
 
 		// TODO: revisit on this to perfectly align
-		data := strings.Join(tokens[3:], "\r\n")
+		data := "hi"
 
 		return data, nil
 	default:
