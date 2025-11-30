@@ -7,8 +7,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/codecrafters-io/redis-starter-go/internal/config"
-	"github.com/codecrafters-io/redis-starter-go/internal/tcpserver"
+	"github.com/archstrap/cache-server/internal/config"
+	"github.com/archstrap/cache-server/internal/tcpserver"
 )
 
 func main() {
