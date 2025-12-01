@@ -30,3 +30,23 @@ func TestParseSimpleString(t *testing.T) {
 	assert.Equal(t, value.DataType, TypeSimpleString)
 
 }
+
+func TestParseBulkString(t *testing.T) {
+	reader := strings.NewReader("$3\r\nGET\r\n")
+
+	value, err := Parse(reader)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, value.Value, "GET")
+	assert.Equal(t, value.DataType, TypeBulkString)
+
+}
+
+func TestParseArray(t *testing.T) {
+	reader := strings.NewReader("*1\r\n$3\r\nGET\r\n")
+
+	value, err := Parse(reader)
+
+	assert.Equal(t, err, nil)
+	assert.Equal(t, value.DataType, TypeArray)
+
+}
