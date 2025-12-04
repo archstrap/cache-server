@@ -18,7 +18,7 @@ func (eventLoop *EventLoop) Start(shutDownSignal <-chan struct{}) {
 
 	for task := range orDone(shutDownSignal, eventLoop.Tasks) {
 		if redisTask, ok := task.(RedisTask); ok {
-			go redisTask.execute()
+			go redisTask.exec()
 		}
 	}
 
