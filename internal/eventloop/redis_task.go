@@ -6,14 +6,15 @@ import (
 	"net"
 
 	"github.com/archstrap/cache-server/internal/parser"
+	parserLib "github.com/archstrap/cache-server/pkg/parser"
 )
 
 type RedisTask struct {
 	Connection net.Conn
 }
 
-func (redisTask *RedisTask) execute() {
-	connection := redisTask.Connection
+func (conn *RedisTask) execute() {
+	connection := conn.Connection
 
 	log.Println("Processing command from:", connection.RemoteAddr())
 
@@ -43,6 +44,28 @@ func (redisTask *RedisTask) execute() {
 		if err != nil {
 			log.Fatalln("Error occurred while trying to write commands. Error details:", err)
 		}
+	}
+
+}
+
+func (conn *RedisTask) exec() {
+
+	connection := conn.Connection
+
+	for {
+		data, err := parserLib.Parse(connection)
+
+		if err != nil {
+			log.Fatalf("Error occurred. reason %v", err)
+		}
+
+		output := parserLib.ParseOutput(data)
+		_, err = connection.Write([]byte(output))
+
+		if err == nil {
+			log.Println("Output flushed successfully")
+		}
+
 	}
 
 }

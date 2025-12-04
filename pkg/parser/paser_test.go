@@ -47,6 +47,7 @@ func TestParseArray(t *testing.T) {
 	value, err := Parse(reader)
 
 	assert.Equal(t, err, nil)
+	// TODO add matches
 	assert.Equal(t, value.DataType, TypeArray)
 
 }
