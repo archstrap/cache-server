@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/archstrap/cache-server/pkg/model"
 	"github.com/magiconair/properties/assert"
 )
 
@@ -15,7 +16,7 @@ func TestParseInteger(t *testing.T) {
 
 	assert.Equal(t, err, nil)
 	assert.Equal(t, value.Value, 2)
-	assert.Equal(t, value.DataType, TypeInteger)
+	assert.Equal(t, value.DataType, model.TypeInteger)
 
 }
 
@@ -27,7 +28,7 @@ func TestParseSimpleString(t *testing.T) {
 
 	assert.Equal(t, err, nil)
 	assert.Equal(t, value.Value, "OK")
-	assert.Equal(t, value.DataType, TypeSimpleString)
+	assert.Equal(t, value.DataType, model.TypeSimpleString)
 
 }
 
@@ -37,7 +38,7 @@ func TestParseBulkString(t *testing.T) {
 	value, err := Parse(reader)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, value.Value, "GET")
-	assert.Equal(t, value.DataType, TypeBulkString)
+	assert.Equal(t, value.DataType, model.TypeBulkString)
 
 }
 
@@ -48,6 +49,6 @@ func TestParseArray(t *testing.T) {
 
 	assert.Equal(t, err, nil)
 	// TODO add matches
-	assert.Equal(t, value.DataType, TypeArray)
+	assert.Equal(t, value.DataType, model.TypeArray)
 
 }
