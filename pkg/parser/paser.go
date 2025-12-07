@@ -7,23 +7,11 @@ import (
 	"log"
 	"strconv"
 	"strings"
+
+	"github.com/archstrap/cache-server/pkg/model"
 )
 
-type RespType byte
-
-const (
-	TypeArray        RespType = '*'
-	TypeInteger      RespType = ':'
-	TypeSimpleString RespType = '+'
-	TypeBulkString   RespType = '$'
-)
-
-type RespValue struct {
-	DataType RespType
-	Value    any
-}
-
-func Parse(ioReader io.Reader) (*RespValue, error) {
+func Parse(ioReader io.Reader) (*model.RespValue, error) {
 
 	reader := bufio.NewReader(ioReader)
 	typeByte, err := reader.ReadByte()
@@ -32,38 +20,39 @@ func Parse(ioReader io.Reader) (*RespValue, error) {
 		log.Fatalf("Unable to read byte.")
 	}
 
-	value := &RespValue{}
+	value := &model.RespValue{}
 
-	switch RespType(typeByte) {
-	case TypeArray:
+	switch model.RespType(typeByte) {
+	case model.TypeArray:
 		data, err := parseArray(reader)
-		return &RespValue{
+		return &model.RespValue{
 			Value:    data,
-			DataType: TypeArray,
+			Command:  data[0],
+			DataType: model.TypeArray,
 		}, err
 
-	case TypeSimpleString:
+	case model.TypeSimpleString:
 		simpleString, err := parseSimpleString(reader)
-		return &RespValue{
+		return &model.RespValue{
 			Value:    simpleString,
-			DataType: TypeSimpleString,
+			DataType: model.TypeSimpleString,
 		}, err
 
-	case TypeBulkString:
+	case model.TypeBulkString:
 		bulkString, err := parseBulkString(reader)
-		return &RespValue{
+		return &model.RespValue{
 			Value:    bulkString,
-			DataType: TypeBulkString,
+			DataType: model.TypeBulkString,
 		}, err
 
-	case TypeInteger:
+	case model.TypeInteger:
 		integer, err := parseInteger(reader)
-		return &RespValue{
+		return &model.RespValue{
 			Value:    integer,
-			DataType: TypeInteger,
+			DataType: model.TypeInteger,
 		}, err
 	default:
-		value.DataType = TypeSimpleString
+		value.DataType = model.TypeSimpleString
 		value.Value = "HELLO"
 	}
 
@@ -99,7 +88,7 @@ func parseSimpleString(reader *bufio.Reader) (string, error) {
 func parseBulkString(reader *bufio.Reader) (string, error) {
 	identifierByter, _ := reader.ReadByte()
 
-	if RespType(identifierByter) != TypeBulkString {
+	if model.RespType(identifierByter) != model.TypeBulkString {
 		// TODO add error
 	}
 

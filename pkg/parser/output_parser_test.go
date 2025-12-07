@@ -3,12 +3,13 @@ package parser
 import (
 	"testing"
 
+	"github.com/archstrap/cache-server/pkg/model"
 	"github.com/magiconair/properties/assert"
 )
 
 func TestParseOutputArray(t *testing.T) {
-	input := &RespValue{
-		DataType: TypeArray,
+	input := &model.RespValue{
+		DataType: model.TypeArray,
 		Value:    []string{"ECHO", "hello", "world"},
 	}
 

@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 
+	"github.com/archstrap/cache-server/internal/command"
 	"github.com/archstrap/cache-server/internal/parser"
 	parserLib "github.com/archstrap/cache-server/pkg/parser"
 )
@@ -59,7 +60,8 @@ func (conn *RedisTask) exec() {
 			log.Fatalf("Error occurred. reason %v", err)
 		}
 
-		output := parserLib.ParseOutput(data)
+		factory := command.NewCommandHandlerFactory()
+		output := factory.ProcessCommand(data)
 		_, err = connection.Write([]byte(output))
 
 		if err == nil {
