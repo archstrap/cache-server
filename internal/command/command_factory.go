@@ -1,6 +1,7 @@
 package command
 
 import (
+	"log"
 	"strings"
 
 	"github.com/archstrap/cache-server/pkg/model"
@@ -25,10 +26,21 @@ func (hcf *HandlerFactory) registerCommandHandler(command ICommand) {
 
 func (hcf *HandlerFactory) registerAllCommands() {
 	hcf.registerCommandHandler(&EchoCommand{})
+	hcf.registerCommandHandler(&UnknownCommand{CommandName: "UNKNOWN"})
+}
+
+func getOrDefault(mp map[string]ICommand, key string, defaultValue ICommand) ICommand {
+	value, ok := mp[key]
+	if !ok {
+		value = defaultValue
+	}
+	return value
 }
 
 func (hcf *HandlerFactory) ProcessCommand(input *model.RespValue) string {
 	command := strings.ToUpper(strings.TrimSpace(input.Command))
+
+	log.Println("Received command ", command)
 
 	switch command {
 	case "COMMAND":
@@ -36,7 +48,7 @@ func (hcf *HandlerFactory) ProcessCommand(input *model.RespValue) string {
 	case "PING":
 		return "+PONG\r\n"
 	default:
-		iCommand := hcf.handlers[command]
+		iCommand := getOrDefault(hcf.handlers, command, &UnknownCommand{CommandName: "UNKNOWN"})
 		respOutput := iCommand.Process(input)
 		return parser.ParseOutputV2(respOutput)
 	}
