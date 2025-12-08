@@ -8,9 +8,9 @@ import (
 )
 
 func TestParseOutputArray(t *testing.T) {
-	input := &model.RespValue{
-		DataType: model.TypeArray,
-		Value:    []string{"ECHO", "hello", "world"},
+	input := &model.RespOutput{
+		RespType: model.TypeArray,
+		Data:     []string{"hello", "world"},
 	}
 
 	output := ParseOutput(input)
