@@ -50,7 +50,7 @@ func (hcf *HandlerFactory) ProcessCommand(input *model.RespValue) string {
 	default:
 		iCommand := getOrDefault(hcf.handlers, command, &UnknownCommand{CommandName: "UNKNOWN"})
 		respOutput := iCommand.Process(input)
-		return parser.ParseOutputV2(respOutput)
+		return parser.ParseOutput(respOutput)
 	}
 
 }
