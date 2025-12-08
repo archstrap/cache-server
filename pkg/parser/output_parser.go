@@ -22,8 +22,11 @@ func ParseOutput(respValue *model.RespValue) string {
 
 func ParseOutputV2(result *model.RespOutput) string {
 	switch result.RespType {
-	case model.TypeSimpleString:
+	case model.TypeSimpleString, model.TypeError:
 		return parseSimpleStringOutput(result)
+	case model.TypeBulkString:
+		return parseBulkStringOutput(result)
+
 	}
 
 	return "+OK\r\n"
@@ -52,5 +55,11 @@ func parseArrayOutput(data []string) string {
 }
 
 func parseSimpleStringOutput(data *model.RespOutput) string {
-	return fmt.Sprintf("+%s\r\n", data.Data.(string))
+	return fmt.Sprintf("%s%s\r\n", string(data.RespType), data.Data.(string))
+}
+
+func parseBulkStringOutput(data *model.RespOutput) string {
+	result := data.Data.(string)
+	length := len(result)
+	return fmt.Sprintf("%s%d\r\n%s\r\n", string(data.RespType), length, result)
 }

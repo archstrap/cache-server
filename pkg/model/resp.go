@@ -7,6 +7,7 @@ const (
 	TypeInteger      RespType = ':'
 	TypeSimpleString RespType = '+'
 	TypeBulkString   RespType = '$'
+	TypeError        RespType = '-'
 )
 
 type RespValue struct {
@@ -25,4 +26,8 @@ func NewRespOutput(respType RespType, data any) *RespOutput {
 		RespType: respType,
 		Data:     data,
 	}
+}
+
+func NewUnknownCommandOutput(data any) *RespOutput {
+	return NewRespOutput(TypeError, data)
 }
