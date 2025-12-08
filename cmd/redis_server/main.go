@@ -20,7 +20,7 @@ func main() {
 
 	shutdownSignal := make(chan struct{})
 
-	go graceFullyShutDown(shutdownSignal)
+	go gracefullyShutDown(shutdownSignal)
 
 	serverAddress := fmt.Sprintf("%s:%s", appConfig.GetHost(), appConfig.GetPort())
 
@@ -30,7 +30,7 @@ func main() {
 
 }
 
-func graceFullyShutDown(shutDownSignal chan struct{}) {
+func gracefullyShutDown(shutDownSignal chan struct{}) {
 
 	sigChan := make(chan os.Signal, 1)
 
