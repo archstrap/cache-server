@@ -25,8 +25,18 @@ func (hcf *HandlerFactory) registerCommandHandler(command ICommand) {
 }
 
 func (hcf *HandlerFactory) registerAllCommands() {
-	hcf.registerCommandHandler(&EchoCommand{})
-	hcf.registerCommandHandler(&UnknownCommand{CommandName: "UNKNOWN"})
+
+	var commandHandlers []ICommand
+
+	commandHandlers = append(commandHandlers, &EchoCommand{})
+	commandHandlers = append(commandHandlers, &PingCommand{CommandName: "PING"})
+	commandHandlers = append(commandHandlers, &ConnectCommand{CommandName: "COMMAND"})
+	commandHandlers = append(commandHandlers, &UnknownCommand{CommandName: "UNKNOWN"})
+
+	for _, handler := range commandHandlers {
+		hcf.registerCommandHandler(handler)
+	}
+
 }
 
 func getOrDefault(mp map[string]ICommand, key string, defaultValue ICommand) ICommand {
@@ -42,15 +52,8 @@ func (hcf *HandlerFactory) ProcessCommand(input *model.RespValue) string {
 
 	log.Println("Received command ", command)
 
-	switch command {
-	case "COMMAND":
-		return "+OK\r\n"
-	case "PING":
-		return "+PONG\r\n"
-	default:
-		iCommand := getOrDefault(hcf.handlers, command, &UnknownCommand{CommandName: "UNKNOWN"})
-		respOutput := iCommand.Process(input)
-		return parser.ParseOutput(respOutput)
-	}
+	iCommand := getOrDefault(hcf.handlers, command, &UnknownCommand{CommandName: "UNKNOWN"})
+	respOutput := iCommand.Process(input)
+	return parser.ParseOutput(respOutput)
 
 }
