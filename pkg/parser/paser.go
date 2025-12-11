@@ -17,7 +17,8 @@ func Parse(ioReader io.Reader) (*model.RespValue, error) {
 	typeByte, err := reader.ReadByte()
 
 	if err != nil {
-		log.Fatalf("Unable to read byte.")
+		log.Println("Unable to read byte from the input.")
+		return nil, err
 	}
 
 	value := &model.RespValue{}
