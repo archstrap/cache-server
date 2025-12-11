@@ -1,6 +1,7 @@
 package eventloop
 
 import (
+	"io"
 	"log"
 	"net"
 
@@ -20,7 +21,13 @@ func (conn *RedisTask) exec() {
 		data, err := parserLib.Parse(connection)
 
 		if err != nil {
+
+			if err == io.EOF {
+				log.Printf("Client [ %s ] disconnected", connection.RemoteAddr())
+				break
+			}
 			log.Fatalf("Error occurred. reason %v", err)
+			break
 		}
 
 		factory := command.NewCommandHandlerFactory()
