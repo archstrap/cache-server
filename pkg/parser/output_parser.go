@@ -33,8 +33,7 @@ func parseArrayOutput(result *model.RespOutput) string {
 
 	resultBuilder.WriteString(fmt.Sprintf("%s%d\r\n", string(model.TypeArray), length))
 
-	for i := 0; i < length; i++ {
-		element := data[i]
+	for _, element := range data {
 		child := fmt.Sprintf("%s%d\r\n%s\r\n", string(model.TypeBulkString), len(element), element)
 		resultBuilder.WriteString(child)
 	}
