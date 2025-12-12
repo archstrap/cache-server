@@ -28,7 +28,7 @@ func (hcf *HandlerFactory) registerAllCommands() {
 
 	var commandHandlers []ICommand
 
-	commandHandlers = append(commandHandlers, &EchoCommand{})
+	commandHandlers = append(commandHandlers, &EchoCommand{CommandName: "ECHO"})
 	commandHandlers = append(commandHandlers, &PingCommand{CommandName: "PING"})
 	commandHandlers = append(commandHandlers, &ConnectCommand{CommandName: "COMMAND"})
 	commandHandlers = append(commandHandlers, &UnknownCommand{CommandName: "UNKNOWN"})

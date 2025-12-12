@@ -7,10 +7,11 @@ import (
 )
 
 type EchoCommand struct {
+	CommandName string
 }
 
 func (echo *EchoCommand) Name() string {
-	return "ECHO"
+	return echo.CommandName
 }
 
 func (echo *EchoCommand) Process(value *model.RespValue) *model.RespOutput {
