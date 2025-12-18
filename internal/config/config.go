@@ -7,8 +7,9 @@ import (
 )
 
 type AppConfig struct {
-	port string
-	host string
+	port               string
+	host               string
+	maxParallelization int
 }
 
 func (c *AppConfig) GetPort() string {
@@ -17,6 +18,14 @@ func (c *AppConfig) GetPort() string {
 
 func (c *AppConfig) GetHost() string {
 	return c.host
+}
+
+func (c *AppConfig) GetMaxParallelization() int {
+	return c.maxParallelization
+}
+
+func (c *AppConfig) GetServerAddress() string {
+	return fmt.Sprintf("%s:%s", c.host, c.port)
 }
 
 func NewAppConfig() (*AppConfig, error) {
@@ -29,7 +38,8 @@ func NewAppConfig() (*AppConfig, error) {
 	}
 
 	return &AppConfig{
-		port: viper.GetString("port"),
-		host: viper.GetString("host"),
+		port:               viper.GetString("port"),
+		host:               viper.GetString("host"),
+		maxParallelization: viper.GetInt("maxParallelization"),
 	}, nil
 }

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"context"
 	"log"
 	"os"
 	"os/signal"
@@ -18,29 +18,11 @@ func main() {
 		log.Fatalln("Error reading config file: ", err.Error())
 	}
 
-	shutdownSignal := make(chan struct{})
+	rootContext, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+	defer cancel()
 
-	go gracefullyShutDown(shutdownSignal)
+	server := tcpserver.NewServerFromConfig(appConfig)
 
-	serverAddress := fmt.Sprintf("%s:%s", appConfig.GetHost(), appConfig.GetPort())
+	server.Start(rootContext)
 
-	server := tcpserver.NewServer(serverAddress, 10)
-
-	server.Start(shutdownSignal)
-
-}
-
-func gracefullyShutDown(shutDownSignal chan struct{}) {
-
-	sigChan := make(chan os.Signal, 1)
-
-	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
-
-	log.Println("App is running press CTRL+C to exit")
-
-	receivedSignal := <-sigChan
-	log.Println("Received signal:", receivedSignal)
-	log.Println("App is shutting down gracefully..................")
-
-	close(shutDownSignal)
 }
