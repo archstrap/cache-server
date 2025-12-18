@@ -1,12 +1,15 @@
 package tcpserver
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net"
 	"strings"
 	"sync"
 
+	"github.com/archstrap/cache-server/internal/config"
 	"github.com/archstrap/cache-server/internal/eventloop"
 )
 
@@ -22,6 +25,10 @@ func NewServer(address string, maxParallelization int) *Server {
 			Tasks: make(chan eventloop.RedisTask, maxParallelization)}}
 }
 
+func NewServerFromConfig(config *config.AppConfig) *Server {
+	return NewServer(config.GetServerAddress(), config.GetMaxParallelization())
+}
+
 func printBanner() {
 	fmt.Print(`
 	██╗  ██╗ █████╗ ██╗     ██╗███╗   ██╗██████╗ ██╗    ██████╗ ██████╗ 
@@ -34,7 +41,7 @@ func printBanner() {
 `)
 }
 
-func (server *Server) Start(shutDownSignal <-chan struct{}) {
+func (server *Server) Start(ctx context.Context) {
 	// 1. address -> start the server on the preferred location
 	listener, err := net.Listen("tcp", server.address)
 	if err != nil {
@@ -46,20 +53,20 @@ func (server *Server) Start(shutDownSignal <-chan struct{}) {
 
 	// 2. run the event loop in a separate go-routine
 	eventLoop := server.eventLoop
-	go eventLoop.Start(shutDownSignal)
+	go eventLoop.Start(ctx)
 
 	// 3. The current go-routine will monitor the incoming tasks
 	var wg sync.WaitGroup
 	wg.Add(1)
 
-	go closeClientConnection(shutDownSignal, listener)
+	go closeClientConnection(ctx, listener)
 	go handleIncomingRequests(listener, eventLoop, &wg)
 
 	wg.Wait()
 }
 
-func closeClientConnection(shutDownSignal <-chan struct{}, listener net.Listener) {
-	<-shutDownSignal
+func closeClientConnection(ctx context.Context, listener net.Listener) {
+	<-ctx.Done()
 	log.Println("Closing the listener")
 	if listener == nil {
 		return
@@ -80,17 +87,24 @@ func handleIncomingRequests(
 	for {
 
 		conn, err := listener.Accept()
+
 		if err != nil {
+
+			if errors.Is(err, net.ErrClosed) {
+				log.Println("Socket Connection closed!!!")
+				return
+			}
+
 			log.Printf("Error occurred while accepting a connection..........%v", err)
 			if strings.Contains(err.Error(), "use of closed network connection") {
 				log.Println("closing socket connections..........")
 				return
 			}
 			continue
-		} else {
-			task := eventloop.RedisTask{Connection: conn}
-			eventLoop.AddEvent(task)
 		}
+
+		task := eventloop.RedisTask{Connection: conn}
+		eventLoop.AddEvent(task)
 
 	}
 }

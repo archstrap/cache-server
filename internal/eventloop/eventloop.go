@@ -1,6 +1,7 @@
 package eventloop
 
 import (
+	"context"
 	"log"
 )
 
@@ -12,11 +13,11 @@ func (eventLoop *EventLoop) AddEvent(redisTask RedisTask) {
 	eventLoop.Tasks <- redisTask
 }
 
-func (eventLoop *EventLoop) Start(shutDownSignal <-chan struct{}) {
+func (eventLoop *EventLoop) Start(ctx context.Context) {
 
-	log.Println("EventLoop started...........")
+	log.Println("EventLoop started")
 
-	for task := range orDone(shutDownSignal, eventLoop.Tasks) {
+	for task := range orDone(ctx, eventLoop.Tasks) {
 		if redisTask, ok := task.(RedisTask); ok {
 			go redisTask.exec()
 		}
@@ -25,16 +26,16 @@ func (eventLoop *EventLoop) Start(shutDownSignal <-chan struct{}) {
 	log.Println("EventLoop terminated")
 }
 
-func orDone(done <-chan struct{}, dataChannel <-chan RedisTask) chan interface{} {
+func orDone(ctx context.Context, dataChannel <-chan RedisTask) chan interface{} {
 
-	relayStreams := make(chan interface{})
+	relayStreams := make(chan any)
 
 	go func() {
 		defer close(relayStreams)
 
 		for {
 			select {
-			case <-done:
+			case <-ctx.Done():
 				return
 			case data, ok := <-dataChannel:
 				if !ok {
@@ -43,7 +44,7 @@ func orDone(done <-chan struct{}, dataChannel <-chan RedisTask) chan interface{}
 
 				select {
 				case relayStreams <- data:
-				case <-done:
+				case <-ctx.Done():
 					return
 				}
 			}
