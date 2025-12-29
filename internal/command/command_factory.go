@@ -3,6 +3,7 @@ package command
 import (
 	"log"
 	"strings"
+	"sync"
 
 	"github.com/archstrap/cache-server/pkg/model"
 	"github.com/archstrap/cache-server/pkg/parser"
@@ -13,11 +14,36 @@ type HandlerFactory struct {
 }
 
 func NewCommandHandlerFactory() *HandlerFactory {
+
+	log.Println("Command Handlers Initialized")
+
 	handlerFactory := &HandlerFactory{
 		handlers: make(map[string]ICommand),
 	}
 	handlerFactory.registerAllCommands()
 	return handlerFactory
+}
+
+var (
+	handlerFactoryInstance *HandlerFactory
+	mu                     sync.Mutex
+)
+
+func GetCommandHandlerFactory() *HandlerFactory {
+
+	if handlerFactoryInstance == nil {
+		mu.Lock()
+		defer mu.Unlock()
+		if handlerFactoryInstance == nil {
+			handlerFactoryInstance = NewCommandHandlerFactory()
+		} else {
+			log.Println("Giving Existing Initialized Handlers - 1")
+		}
+	} else {
+		log.Println("Giving Existing Initialized Handlers - 2")
+	}
+
+	return handlerFactoryInstance
 }
 
 func (hcf *HandlerFactory) registerCommandHandler(command ICommand) {

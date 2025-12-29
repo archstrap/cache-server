@@ -35,7 +35,7 @@ func (conn *RedisTask) exec() {
 				log.Fatalf("Error occurred. reason %v", err)
 			}
 
-			factory := command.NewCommandHandlerFactory()
+			factory := command.GetCommandHandlerFactory()
 			output := factory.ProcessCommand(data)
 			_, err = connection.Write([]byte(output))
 
