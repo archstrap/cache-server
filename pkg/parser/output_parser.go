@@ -47,6 +47,11 @@ func parseSimpleStringOutput(data *model.RespOutput) string {
 
 func parseBulkStringOutput(data *model.RespOutput) string {
 	result := data.Data.(string)
+
+	if result == "-1" {
+		return fmt.Sprintf("%s-1\r\n", string(data.RespType))
+	}
+
 	length := len(result)
 	return fmt.Sprintf("%s%d\r\n%s\r\n", string(data.RespType), length, result)
 }
