@@ -60,7 +60,7 @@ func (server *Server) Start(ctx context.Context) {
 	wg.Add(1)
 
 	go closeClientConnection(ctx, listener)
-	go handleIncomingRequests(listener, eventLoop, &wg)
+	go handleIncomingRequests(listener, eventLoop, &wg, ctx)
 
 	wg.Wait()
 }
@@ -80,7 +80,7 @@ func closeClientConnection(ctx context.Context, listener net.Listener) {
 func handleIncomingRequests(
 	listener net.Listener,
 	eventLoop *eventloop.EventLoop,
-	wg *sync.WaitGroup) {
+	wg *sync.WaitGroup, ctx context.Context) {
 
 	defer wg.Done()
 
@@ -103,7 +103,7 @@ func handleIncomingRequests(
 			continue
 		}
 
-		task := eventloop.RedisTask{Connection: conn}
+		task := eventloop.RedisTask{Connection: conn, Context: ctx}
 		eventLoop.AddEvent(task)
 
 	}

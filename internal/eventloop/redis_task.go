@@ -1,6 +1,7 @@
 package eventloop
 
 import (
+	"context"
 	"io"
 	"log"
 	"net"
@@ -11,6 +12,7 @@ import (
 
 type RedisTask struct {
 	Connection net.Conn
+	Context    context.Context
 }
 
 func (conn *RedisTask) exec() {
@@ -18,24 +20,28 @@ func (conn *RedisTask) exec() {
 	connection := conn.Connection
 
 	for {
-		data, err := parserLib.Parse(connection)
+		select {
+		case <-conn.Context.Done():
+			log.Println("Shutdown server")
+			return
 
-		if err != nil {
-
-			if err == io.EOF {
-				log.Printf("Client [ %s ] disconnected", connection.RemoteAddr())
-				break
+		default:
+			data, err := parserLib.Parse(connection)
+			if err != nil {
+				if err == io.EOF {
+					log.Printf("Client [ %s ] disconnected", connection.RemoteAddr())
+					return
+				}
+				log.Fatalf("Error occurred. reason %v", err)
 			}
-			log.Fatalf("Error occurred. reason %v", err)
-			break
-		}
 
-		factory := command.NewCommandHandlerFactory()
-		output := factory.ProcessCommand(data)
-		_, err = connection.Write([]byte(output))
+			factory := command.NewCommandHandlerFactory()
+			output := factory.ProcessCommand(data)
+			_, err = connection.Write([]byte(output))
 
-		if err == nil {
-			log.Println("Output flushed successfully")
+			if err == nil {
+				log.Println("Output flushed successfully")
+			}
 		}
 
 	}

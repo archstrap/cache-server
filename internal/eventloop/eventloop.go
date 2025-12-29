@@ -26,7 +26,7 @@ func (eventLoop *EventLoop) Start(ctx context.Context) {
 	log.Println("EventLoop terminated")
 }
 
-func orDone(ctx context.Context, dataChannel <-chan RedisTask) chan interface{} {
+func orDone(ctx context.Context, dataChannel <-chan RedisTask) chan any {
 
 	relayStreams := make(chan any)
 
