@@ -10,8 +10,6 @@ module github.com/archstrap/cache-server
 
 go 1.23.0
 
-toolchain go1.24.0
-
 require (
 	github.com/magiconair/properties v1.8.9
 	github.com/spf13/viper v1.19.0
