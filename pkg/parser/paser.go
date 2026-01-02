@@ -112,7 +112,7 @@ func parseArray(reader *bufio.Reader) ([]string, error) {
 	noOfElements, _ := parseInteger(reader)
 	elements := make([]string, noOfElements)
 
-	for i := 0; i < noOfElements; i++ {
+	for i := range noOfElements {
 		data, _ := parseBulkString(reader)
 		elements[i] = data
 	}
