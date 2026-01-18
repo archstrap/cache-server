@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"net"
+	"os"
 	"strings"
 	"sync"
 
@@ -45,11 +46,12 @@ func (server *Server) Start(ctx context.Context) {
 	// 1. address -> start the server on the preferred location
 	listener, err := net.Listen("tcp", server.address)
 	if err != nil {
-		log.Fatalf("Failed to start server at address: %s. Error Details: %v\n", server.address, err)
+		slog.Error("Failed to start server", "address", server.address, "error", err)
+		os.Exit(1)
 	}
 	// print banner
 	printBanner()
-	log.Println("Server started at:", server.address)
+	slog.Info("Cache server started at", slog.String("port", server.address))
 
 	// 2. run the event loop in a separate go-routine
 	eventLoop := server.eventLoop
@@ -67,7 +69,7 @@ func (server *Server) Start(ctx context.Context) {
 
 func closeClientConnection(ctx context.Context, listener net.Listener) {
 	<-ctx.Done()
-	log.Println("Closing the listener")
+	slog.Info("Closing the listener")
 	if listener == nil {
 		return
 	}
@@ -91,13 +93,13 @@ func handleIncomingRequests(
 		if err != nil {
 
 			if errors.Is(err, net.ErrClosed) {
-				log.Println("Socket Connection closed!!!")
+				slog.Info("Socket Connection closed")
 				return
 			}
 
-			log.Printf("Error occurred while accepting a connection..........%v", err)
+			slog.Error("Error occurred while accepting a connection", "error", err)
 			if strings.Contains(err.Error(), "use of closed network connection") {
-				log.Println("closing socket connections..........")
+				slog.Info("closing socket connections")
 				return
 			}
 			continue

@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"strconv"
 	"strings"
 
@@ -17,7 +17,7 @@ func Parse(ioReader io.Reader) (*model.RespValue, error) {
 	typeByte, err := reader.ReadByte()
 
 	if err != nil {
-		log.Println("Unable to read byte from the input.")
+		slog.Info("Unable to read byte from the input")
 		return nil, err
 	}
 

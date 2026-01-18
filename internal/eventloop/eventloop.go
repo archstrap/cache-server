@@ -2,7 +2,7 @@ package eventloop
 
 import (
 	"context"
-	"log"
+	"log/slog"
 )
 
 type EventLoop struct {
@@ -15,7 +15,7 @@ func (eventLoop *EventLoop) AddEvent(redisTask RedisTask) {
 
 func (eventLoop *EventLoop) Start(ctx context.Context) {
 
-	log.Println("EventLoop started")
+	slog.Info("EventLoop started")
 
 	for task := range orDone(ctx, eventLoop.Tasks) {
 		if redisTask, ok := task.(RedisTask); ok {
@@ -23,7 +23,7 @@ func (eventLoop *EventLoop) Start(ctx context.Context) {
 		}
 	}
 
-	log.Println("EventLoop terminated")
+	slog.Info("EventLoop terminated")
 }
 
 func orDone(ctx context.Context, dataChannel <-chan RedisTask) chan any {

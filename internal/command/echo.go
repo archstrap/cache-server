@@ -1,7 +1,7 @@
 package command
 
 import (
-	"log"
+	"log/slog"
 
 	"github.com/archstrap/cache-server/pkg/model"
 )
@@ -23,7 +23,7 @@ func (echo *EchoCommand) Process(value *model.RespValue) *model.RespOutput {
 	}
 
 	args := data[1]
-	log.Println("ECHO: ", args)
+	slog.Info("ECHO", "args", args)
 
 	return model.NewRespOutput(model.TypeBulkString, args)
 }

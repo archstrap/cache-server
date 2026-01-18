@@ -1,7 +1,7 @@
 package command
 
 import (
-	"log"
+	"log/slog"
 	"strings"
 	"sync"
 
@@ -15,7 +15,7 @@ type HandlerFactory struct {
 
 func NewCommandHandlerFactory() *HandlerFactory {
 
-	log.Println("Command Handlers Initialized")
+	slog.Info("Command Handlers Initialized")
 
 	handlerFactory := &HandlerFactory{
 		handlers: make(map[string]ICommand),
@@ -37,10 +37,10 @@ func GetCommandHandlerFactory() *HandlerFactory {
 		if handlerFactoryInstance == nil {
 			handlerFactoryInstance = NewCommandHandlerFactory()
 		} else {
-			log.Println("Giving Existing Initialized Handlers - 1")
+			slog.Info("Giving Existing Initialized Handlers - 1")
 		}
 	} else {
-		log.Println("Giving Existing Initialized Handlers - 2")
+		slog.Info("Giving Existing Initialized Handlers - 2")
 	}
 
 	return handlerFactoryInstance
@@ -78,7 +78,7 @@ func getOrDefault(mp map[string]ICommand, key string, defaultValue ICommand) ICo
 func (hcf *HandlerFactory) ProcessCommand(input *model.RespValue) string {
 	command := strings.ToUpper(strings.TrimSpace(input.Command))
 
-	log.Println("Received command ", command)
+	slog.Info("Received command", "command", command)
 
 	iCommand := getOrDefault(hcf.handlers, command, &UnknownCommand{CommandName: "UNKNOWN"})
 	respOutput := iCommand.Process(input)
