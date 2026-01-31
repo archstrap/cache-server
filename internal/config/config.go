@@ -2,14 +2,21 @@ package config
 
 import (
 	"fmt"
+	"os"
 
-	"github.com/spf13/viper"
+	"gopkg.in/yaml.v3"
 )
 
 type AppConfig struct {
 	port               string
 	host               string
 	maxParallelization int
+}
+
+type configFile struct {
+	Port               string `yaml:"port"`
+	Host               string `yaml:"host"`
+	MaxParallelization int    `yaml:"maxParallelization"`
 }
 
 func (c *AppConfig) GetPort() string {
@@ -29,17 +36,19 @@ func (c *AppConfig) GetServerAddress() string {
 }
 
 func NewAppConfig() (*AppConfig, error) {
-	viper.SetConfigName("config")
-	viper.SetConfigType("yaml")
-	viper.AddConfigPath("./resources")
-
-	if err := viper.ReadInConfig(); err != nil {
+	data, err := os.ReadFile("./resources/config.yaml")
+	if err != nil {
 		return nil, fmt.Errorf("error reading config file: %w", err)
 	}
 
+	var cfg configFile
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		return nil, fmt.Errorf("error parsing config file: %w", err)
+	}
+
 	return &AppConfig{
-		port:               viper.GetString("port"),
-		host:               viper.GetString("host"),
-		maxParallelization: viper.GetInt("maxParallelization"),
+		port:               cfg.Port,
+		host:               cfg.Host,
+		maxParallelization: cfg.MaxParallelization,
 	}, nil
 }
