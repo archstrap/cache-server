@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
@@ -15,7 +15,7 @@ func main() {
 
 	appConfig, err := config.NewAppConfig()
 	if err != nil {
-		log.Fatalln("Error reading config file: ", err.Error())
+		slog.Error("Error reading config file:", "err", err.Error())
 	}
 
 	rootContext, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGINT, syscall.SIGTERM)

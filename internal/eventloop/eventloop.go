@@ -2,7 +2,9 @@ package eventloop
 
 import (
 	"context"
-	"log"
+	"log/slog"
+
+	"github.com/archstrap/cache-server/util"
 )
 
 type EventLoop struct {
@@ -15,42 +17,13 @@ func (eventLoop *EventLoop) AddEvent(redisTask RedisTask) {
 
 func (eventLoop *EventLoop) Start(ctx context.Context) {
 
-	log.Println("EventLoop started")
+	slog.Info("EventLoop started")
 
-	for task := range orDone(ctx, eventLoop.Tasks) {
+	for task := range util.OrDone(ctx, eventLoop.Tasks) {
 		if redisTask, ok := task.(RedisTask); ok {
 			go redisTask.exec()
 		}
 	}
 
-	log.Println("EventLoop terminated")
-}
-
-func orDone(ctx context.Context, dataChannel <-chan RedisTask) chan any {
-
-	relayStreams := make(chan any)
-
-	go func() {
-		defer close(relayStreams)
-
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case data, ok := <-dataChannel:
-				if !ok {
-					return
-				}
-
-				select {
-				case relayStreams <- data:
-				case <-ctx.Done():
-					return
-				}
-			}
-		}
-	}()
-
-	return relayStreams
-
+	slog.Info("EventLoop terminated")
 }

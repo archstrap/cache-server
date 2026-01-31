@@ -3,8 +3,9 @@ package eventloop
 import (
 	"context"
 	"io"
-	"log"
+	"log/slog"
 	"net"
+	"os"
 
 	"github.com/archstrap/cache-server/internal/command"
 	parserLib "github.com/archstrap/cache-server/pkg/parser"
@@ -22,17 +23,18 @@ func (conn *RedisTask) exec() {
 	for {
 		select {
 		case <-conn.Context.Done():
-			log.Println("Shutdown server")
+			slog.Info("Shutdown server")
 			return
 
 		default:
 			data, err := parserLib.Parse(connection)
 			if err != nil {
 				if err == io.EOF {
-					log.Printf("Client [ %s ] disconnected", connection.RemoteAddr())
+					slog.Info("Client disconnected", "address", connection.RemoteAddr())
 					return
 				}
-				log.Fatalf("Error occurred. reason %v", err)
+				slog.Error("Error occurred", "error", err)
+				os.Exit(1)
 			}
 
 			factory := command.GetCommandHandlerFactory()
@@ -40,7 +42,7 @@ func (conn *RedisTask) exec() {
 			_, err = connection.Write([]byte(output))
 
 			if err == nil {
-				log.Println("Output flushed successfully")
+				slog.Info("Output flushed successfully")
 			}
 		}
 
