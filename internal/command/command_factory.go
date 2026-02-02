@@ -59,6 +59,7 @@ func (hcf *HandlerFactory) registerAllCommands() {
 	commandHandlers = append(commandHandlers, &ConnectCommand{CommandName: "COMMAND"})
 	commandHandlers = append(commandHandlers, &GetCommand{CommandName: "GET"})
 	commandHandlers = append(commandHandlers, &SetCommand{CommandName: "SET"})
+	commandHandlers = append(commandHandlers, &ConfigCommand{})
 	commandHandlers = append(commandHandlers, &UnknownCommand{CommandName: "UNKNOWN"})
 
 	for _, handler := range commandHandlers {

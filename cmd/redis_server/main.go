@@ -13,6 +13,7 @@ import (
 
 func main() {
 
+	config.ReadFlags()
 	appConfig, err := config.NewAppConfig()
 	if err != nil {
 		slog.Error("Error reading config file:", "err", err.Error())
