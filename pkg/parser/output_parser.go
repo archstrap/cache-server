@@ -24,6 +24,10 @@ func parseArrayOutput(result *model.RespOutput) string {
 
 	data := result.Data.([]string)
 
+	if len(data) == 0 {
+		return "*0\r\n"
+	}
+
 	var resultBuilder strings.Builder
 	length := len(data)
 

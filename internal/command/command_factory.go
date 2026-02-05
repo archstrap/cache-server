@@ -57,9 +57,10 @@ func (hcf *HandlerFactory) registerAllCommands() {
 	commandHandlers = append(commandHandlers, &EchoCommand{CommandName: "ECHO"})
 	commandHandlers = append(commandHandlers, &PingCommand{CommandName: "PING"})
 	commandHandlers = append(commandHandlers, &ConnectCommand{CommandName: "COMMAND"})
-	commandHandlers = append(commandHandlers, &GetCommand{CommandName: "GET"})
-	commandHandlers = append(commandHandlers, &SetCommand{CommandName: "SET"})
+	commandHandlers = append(commandHandlers, GetCommandInstance)
+	commandHandlers = append(commandHandlers, SetCommandInstance)
 	commandHandlers = append(commandHandlers, &ConfigCommand{})
+	commandHandlers = append(commandHandlers, KeyCommandInstance)
 	commandHandlers = append(commandHandlers, &UnknownCommand{CommandName: "UNKNOWN"})
 
 	for _, handler := range commandHandlers {
