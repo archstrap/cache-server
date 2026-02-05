@@ -28,8 +28,20 @@ type Cache struct {
 	data map[string]CacheItem
 }
 
-var cache = &Cache{
+var CacheStore = &Cache{
 	data: make(map[string]CacheItem),
+}
+
+var SetCommandInstance = &SetCommand{
+	CommandName: "SET",
+}
+
+var GetCommandInstance = &GetCommand{
+	CommandName: "GET",
+}
+
+func GetCacheStore() *Cache {
+	return CacheStore
 }
 
 var subCommands = map[string]bool{
@@ -54,14 +66,14 @@ func (command *GetCommand) Process(value *model.RespValue) *model.RespOutput {
 		return model.NewRespOutput(model.TypeError, "ERR wrong number of arguments for 'get' command")
 	}
 
-	cache.mu.RLock()
-	defer cache.mu.RUnlock()
+	CacheStore.mu.RLock()
+	defer CacheStore.mu.RUnlock()
 
 	key := data[1]
-	cacheItem, ok := cache.data[key]
+	cacheItem, ok := CacheStore.data[key]
 	val := cacheItem.item
 	if !ok || !cacheItem.expiresAt.IsZero() && time.Now().After(cacheItem.expiresAt) {
-		delete(cache.data, key)
+		delete(CacheStore.data, key)
 		val = "-1"
 	}
 
@@ -104,12 +116,12 @@ func (command *SetCommand) Process(value *model.RespValue) *model.RespOutput {
 
 	}
 
-	cache.mu.Lock()
-	defer cache.mu.Unlock()
+	CacheStore.mu.Lock()
+	defer CacheStore.mu.Unlock()
 
 	key := data[1]
 	val := data[2]
-	cache.data[key] = CacheItem{item: val, expiresAt: expiresAt}
+	CacheStore.data[key] = CacheItem{item: val, expiresAt: expiresAt}
 
 	return model.NewRespOutput(model.TypeSimpleString, "OK")
 }
