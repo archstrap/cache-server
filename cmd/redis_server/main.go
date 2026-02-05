@@ -13,11 +13,11 @@ import (
 
 func main() {
 
-	config.ReadFlags()
 	appConfig, err := config.NewAppConfig()
 	if err != nil {
 		slog.Error("Error reading config file:", "err", err.Error())
 	}
+	config.ReadFlags()
 
 	rootContext, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()

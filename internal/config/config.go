@@ -32,7 +32,11 @@ func (c *AppConfig) GetMaxParallelization() int {
 }
 
 func (c *AppConfig) GetServerAddress() string {
-	return fmt.Sprintf("%s:%s", c.host, c.port)
+	port := Port
+	if port == "" {
+		port = c.port
+	}
+	return fmt.Sprintf("%s:%s", c.host, port)
 }
 
 func NewAppConfig() (*AppConfig, error) {

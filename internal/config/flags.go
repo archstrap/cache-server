@@ -1,10 +1,13 @@
 package config
 
-import "github.com/spf13/pflag"
+import (
+	"github.com/spf13/pflag"
+)
 
 var (
 	Dir        string
 	Dbfilename string
+	Port       string
 	Store      map[string]string
 )
 
@@ -12,6 +15,7 @@ func ReadFlags() {
 
 	pflag.StringVar(&Dir, "dir", "/tmp/redis-data", "the path to the directory where the RDB file is stored (example: /tmp/redis-data)")
 	pflag.StringVar(&Dbfilename, "dbfilename", "rdbfile", "the name of the RDB file (example: rdbfile)")
+	pflag.StringVar(&Port, "port", "", "Custom Port to run on")
 	pflag.Parse()
 
 	Store = make(map[string]string)
