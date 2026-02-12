@@ -28,6 +28,9 @@ type RDBReader struct {
 }
 
 func LoadRdb() {
+	if config.Dir == "" && config.Dbfilename == "" {
+		return
+	}
 	rdbFilePath := fmt.Sprintf("%s/%s", config.Dir, config.Dbfilename)
 	rdbReader := NewRDBReader(rdbFilePath)
 	if rdbReader == nil {
@@ -149,7 +152,7 @@ func (r *RDBReader) ReadDb() (any, error) {
 		}
 
 		switch typeByte {
-		case 0xFB:
+		case 0xFB: // we have to read data for hash tables
 			hashTableSize, err = r.ReadByte()
 			if err != nil {
 				return "", err
@@ -181,7 +184,7 @@ func (r *RDBReader) ReadDb() (any, error) {
 			expiryTimeStamp = fmt.Sprint(timeStamp)
 			timeStampType = "EX"
 
-		case 0:
+		case 0: // value type will be string
 			k, err := r.ReadString()
 			if err != nil {
 				return "", err
