@@ -1,5 +1,7 @@
 package model
 
+import "fmt"
+
 type RespType byte
 
 const (
@@ -14,6 +16,10 @@ type RespValue struct {
 	DataType RespType
 	Value    any
 	Command  string
+}
+
+func (r *RespValue) String() string {
+	return fmt.Sprintf("Type: %d, Command: %s, Value: %s", r.DataType, r.Command, r.Value)
 }
 
 type RespOutput struct {

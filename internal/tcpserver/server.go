@@ -13,6 +13,7 @@ import (
 	"github.com/archstrap/cache-server/internal/config"
 	"github.com/archstrap/cache-server/internal/eventloop"
 	"github.com/archstrap/cache-server/internal/rdb"
+	"github.com/archstrap/cache-server/internal/replication"
 )
 
 type Server struct {
@@ -52,6 +53,7 @@ func (server *Server) Start(ctx context.Context) {
 	}
 	// print banner
 	printBanner()
+	replication.InitFromConfig()
 	slog.Info("Cache server started at", slog.String("port", server.address))
 
 	// Load RDB

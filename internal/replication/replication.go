@@ -3,9 +3,12 @@ package replication
 import (
 	"fmt"
 	"log/slog"
+	"net"
 	"strings"
 
 	"github.com/archstrap/cache-server/internal/config"
+	"github.com/archstrap/cache-server/pkg/model"
+	"github.com/archstrap/cache-server/pkg/parser"
 )
 
 // State holds replication role and metadata (master_replid, master_repl_offset, etc.).
@@ -44,6 +47,7 @@ func initAsReplica() {
 		},
 	}
 	slog.Info("server started as Replica Node")
+	go connectToMaster()
 }
 
 func getMasterReplicationID() string {
@@ -61,4 +65,30 @@ func FormatDetails() string {
 		lines = append(lines, fmt.Sprintf("%s:%s", k, v))
 	}
 	return strings.Join(lines, "\r\n") + "\r\n"
+}
+
+func connectToMaster() {
+
+	masterNodeDetails := strings.ReplaceAll(config.Store["replicaof"], " ", ":")
+
+	conn, err := net.Dial("tcp", masterNodeDetails)
+	if err != nil {
+		slog.Error("Unable to connect to master node.", slog.Any("address", masterNodeDetails))
+		return
+	}
+	defer conn.Close()
+
+	serializedPingCommand := parser.ParseOutput(model.NewRespOutput(model.TypeArray, []string{"PING"}))
+	conn.Write([]byte(serializedPingCommand))
+
+	response, err := parser.Parse(conn)
+	if err != nil {
+		slog.Error("Unable to get the response from replica")
+		return
+	}
+
+	slog.Info("Received ", slog.Any("response", response.String()))
+
+	slog.Info("Connected to Master Node. ", slog.Any("Address", masterNodeDetails))
+
 }
