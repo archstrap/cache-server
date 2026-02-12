@@ -28,7 +28,7 @@ type RDBReader struct {
 }
 
 func LoadRdb() {
-	if config.Dir == "" && config.Dbfilename == "" {
+	if !config.RDBEnabled() {
 		return
 	}
 	rdbFilePath := fmt.Sprintf("%s/%s", config.Dir, config.Dbfilename)

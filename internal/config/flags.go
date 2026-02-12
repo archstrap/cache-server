@@ -26,3 +26,8 @@ func ReadFlags() {
 		Store[f.Name] = f.Value.String()
 	})
 }
+
+// RDBEnabled returns true when both Dir and Dbfilename are set (RDB load will run).
+func RDBEnabled() bool {
+	return Dir != "" && Dbfilename != ""
+}

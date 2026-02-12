@@ -8,6 +8,7 @@ import (
 	"syscall"
 
 	"github.com/archstrap/cache-server/internal/config"
+	"github.com/archstrap/cache-server/internal/replication"
 	"github.com/archstrap/cache-server/internal/tcpserver"
 )
 
@@ -18,6 +19,7 @@ func main() {
 		slog.Error("Error reading config file:", "err", err.Error())
 	}
 	config.ReadFlags()
+	replication.InitFromConfig()
 
 	rootContext, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
