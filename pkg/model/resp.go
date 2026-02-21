@@ -22,6 +22,10 @@ func (r *RespValue) String() string {
 	return fmt.Sprintf("Type: %d, Command: %s, Value: %s", r.DataType, r.Command, r.Value)
 }
 
+func (r *RespValue) ArgsToStringSlice() []string {
+	return r.Value.([]string)
+}
+
 type RespOutput struct {
 	RespType RespType
 	Data     any

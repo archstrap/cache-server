@@ -32,7 +32,7 @@ func initAsMaster() {
 	state = &State{
 		details: map[string]string{
 			"role":               "master",
-			"master_replid":      getMasterReplicationID(),
+			"master_replid":      GetServerReplicationID(),
 			"master_repl_offset": "0",
 		},
 	}
@@ -50,7 +50,7 @@ func initAsReplica() {
 	go connectToMaster()
 }
 
-func getMasterReplicationID() string {
+func GetServerReplicationID() string {
 	return "8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb"
 }
 
@@ -92,6 +92,7 @@ func initiateHandShake(conn net.Conn) {
 	commands = append(commands, []string{"PING"})
 	commands = append(commands, []string{"REPLCONF", "listening-port", config.Store["port"]}) // config.Store["port"] -> Gives the current port of the running server
 	commands = append(commands, []string{"REPLCONF", "capa", "psync2"})
+	commands = append(commands, []string{"PSYNC", "?", "-1"})
 
 	for no := range commands {
 		serializedCommand := parser.ParseOutput(model.NewRespOutput(model.TypeArray, commands[no]))
