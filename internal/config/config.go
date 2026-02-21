@@ -39,6 +39,8 @@ func (c *AppConfig) GetServerAddress() string {
 	return fmt.Sprintf("%s:%s", c.host, port)
 }
 
+var appConfig *AppConfig
+
 func NewAppConfig() (*AppConfig, error) {
 	data, err := os.ReadFile("./resources/config.yaml")
 	if err != nil {
@@ -50,9 +52,12 @@ func NewAppConfig() (*AppConfig, error) {
 		return nil, fmt.Errorf("error parsing config file: %w", err)
 	}
 
-	return &AppConfig{
+	appConfig = &AppConfig{
 		port:               cfg.Port,
 		host:               cfg.Host,
 		maxParallelization: cfg.MaxParallelization,
-	}, nil
+	}
+
+	return appConfig, nil
+
 }

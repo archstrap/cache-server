@@ -37,3 +37,7 @@ func NewRespOutput(respType RespType, data any) *RespOutput {
 func NewUnknownCommandOutput(data any) *RespOutput {
 	return NewRespOutput(TypeError, data)
 }
+
+func NewWrongNumberOfOutput(commandName string) *RespOutput {
+	return NewRespOutput(TypeError, fmt.Sprintf("ERR wrong number of arguments for '%s' command", commandName))
+}

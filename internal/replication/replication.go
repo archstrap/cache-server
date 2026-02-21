@@ -78,17 +78,33 @@ func connectToMaster() {
 	}
 	defer conn.Close()
 
-	serializedPingCommand := parser.ParseOutput(model.NewRespOutput(model.TypeArray, []string{"PING"}))
-	conn.Write([]byte(serializedPingCommand))
+	// REPLICATION -> MASTER HANDSHAKE
 
-	response, err := parser.Parse(conn)
-	if err != nil {
-		slog.Error("Unable to get the response from replica")
-		return
-	}
-
-	slog.Info("Received ", slog.Any("response", response.String()))
+	initiateHandShake(conn)
 
 	slog.Info("Connected to Master Node. ", slog.Any("Address", masterNodeDetails))
+
+}
+
+func initiateHandShake(conn net.Conn) {
+
+	commands := make([][]string, 0)
+	commands = append(commands, []string{"PING"})
+	commands = append(commands, []string{"REPLCONF", "listening-port", config.Store["port"]}) // config.Store["port"] -> Gives the current port of the running server
+	commands = append(commands, []string{"REPLCONF", "capa", "psync2"})
+
+	for no := range commands {
+		serializedCommand := parser.ParseOutput(model.NewRespOutput(model.TypeArray, commands[no]))
+		conn.Write([]byte(serializedCommand))
+		response, err := parser.Parse(conn)
+		if err != nil {
+			slog.Error("Unable to get response from master")
+			return
+		}
+
+		slog.Info("Received for: ", slog.Any("Input", fmt.Sprintf("%v", commands[no])), slog.Any("Output", response.String()))
+	}
+
+	slog.Info("HandShake Completed Between Replica and Master")
 
 }

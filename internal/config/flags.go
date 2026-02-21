@@ -16,7 +16,7 @@ func ReadFlags() {
 
 	pflag.StringVar(&Dir, "dir", "", "the path to the directory where the RDB file is stored (example: /tmp/redis-data)")
 	pflag.StringVar(&Dbfilename, "dbfilename", "", "the name of the RDB file (example: rdbfile)")
-	pflag.StringVar(&Port, "port", "", "Custom Port to run on")
+	pflag.StringVar(&Port, "port", appConfig.GetPort(), "Custom Port to run on")
 	pflag.StringVar(&ReplicaOf, "replicaof", "", "flag to start a Redis server as a replica")
 	pflag.Parse()
 
