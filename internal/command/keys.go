@@ -46,7 +46,7 @@ func (k *KeyCommand) Process(input *model.RespValue) *model.RespOutput {
 		}
 	}
 
-	go cleanup(cleanableKeys)
+	go cleanup(&cleanableKeys)
 
 	return model.NewRespOutput(model.TypeArray, keys)
 }
@@ -55,10 +55,10 @@ func (k *KeyCommand) Name() string {
 	return "KEYS"
 }
 
-func cleanup(cleanableKeys []string) {
+func cleanup(cleanableKeys *[]string) {
 	store := GetCacheStore()
-	for i := range cleanableKeys {
-		delete(store.data, cleanableKeys[i])
+	for i := range *cleanableKeys {
+		delete(store.data, (*cleanableKeys)[i])
 	}
-	slog.Info("Delete expired keys ", "count", len(cleanableKeys))
+	slog.Info("Delete expired keys ", "count", len(*cleanableKeys))
 }
