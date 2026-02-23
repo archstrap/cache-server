@@ -6,8 +6,10 @@ import (
 	"log/slog"
 	"net"
 	"os"
+	"strings"
 
 	"github.com/archstrap/cache-server/internal/command"
+	"github.com/archstrap/cache-server/internal/rdb"
 	parserLib "github.com/archstrap/cache-server/pkg/parser"
 )
 
@@ -41,11 +43,28 @@ func (conn *RedisTask) exec() {
 			output := factory.ProcessCommand(data)
 			_, err = connection.Write([]byte(output))
 
-			if err == nil {
-				slog.Info("Output flushed successfully")
+			if err != nil {
+				slog.Error("Error while sending outputs .", slog.Any("details", err))
+				break
 			}
+			go sendExtraPayloadIfPossible(connection, output)
 		}
 
+	}
+
+}
+
+func sendExtraPayloadIfPossible(conn net.Conn, output string) {
+
+	if strings.Contains(output, "FULLRESYNC") {
+		slog.Info("Sending RDB snapshots", slog.Any("connection details", conn.RemoteAddr().String()))
+		data := rdb.GetRDBSnapshot()
+		_, err := conn.Write(data)
+		if err != nil {
+			slog.Error("Error while sending RDB snapshots. ", slog.Any("details", err))
+		} else {
+			slog.Info("rdb snapshots sent to", slog.Any("details", conn.RemoteAddr().String()))
+		}
 	}
 
 }

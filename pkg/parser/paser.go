@@ -87,11 +87,11 @@ func parseSimpleString(reader *bufio.Reader) (string, error) {
 }
 
 func parseBulkString(reader *bufio.Reader) (string, error) {
-	identifierByter, _ := reader.ReadByte()
-
-	if model.RespType(identifierByter) != model.TypeBulkString {
-		// TODO add error
-	}
+	// identifierByter, _ := reader.ReadByte()
+	//
+	// if model.RespType(identifierByter) != model.TypeBulkString {
+	// 	// TODO add error
+	// }
 
 	lengthOfTheString, _ := reader.ReadString('\n')
 	length, _ := strconv.Atoi(lengthOfTheString)
@@ -113,10 +113,28 @@ func parseArray(reader *bufio.Reader) ([]string, error) {
 	elements := make([]string, noOfElements)
 
 	for i := range noOfElements {
+		if identifierByter, err := reader.ReadByte(); err != nil || model.RespType(identifierByter) != model.TypeBulkString {
+			return nil, fmt.Errorf("Unable to read bytes of type bulkString\n")
+		}
 		data, _ := parseBulkString(reader)
 		elements[i] = data
 	}
 
 	return elements, nil
 
+}
+
+func ParseRDb(reader io.Reader) (string, error) {
+	bufReader := bufio.NewReader(reader)
+	typeByte, _ := bufReader.ReadByte()
+	if typeByte != '$' {
+		return "", fmt.Errorf("Unknown type received. %s", string(typeByte))
+	}
+	slog.Info("received type byte", slog.Any("data", string(typeByte)))
+
+	length, _ := bufReader.ReadString('\n')
+	size, _ := strconv.Atoi(strings.TrimSpace(length))
+	buf := make([]byte, size)
+	io.ReadFull(bufReader, buf)
+	return string(buf[:size]), nil
 }

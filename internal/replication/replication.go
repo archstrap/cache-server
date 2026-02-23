@@ -2,6 +2,7 @@ package replication
 
 import (
 	"fmt"
+	"io"
 	"log/slog"
 	"net"
 	"strings"
@@ -82,8 +83,6 @@ func connectToMaster() {
 
 	initiateHandShake(conn)
 
-	slog.Info("Connected to Master Node. ", slog.Any("Address", masterNodeDetails))
-
 }
 
 func initiateHandShake(conn net.Conn) {
@@ -99,7 +98,7 @@ func initiateHandShake(conn net.Conn) {
 		conn.Write([]byte(serializedCommand))
 		response, err := parser.Parse(conn)
 		if err != nil {
-			slog.Error("Unable to get response from master")
+			slog.Error("Unable to get response from master.", slog.Any("details", err))
 			return
 		}
 
@@ -107,5 +106,31 @@ func initiateHandShake(conn net.Conn) {
 	}
 
 	slog.Info("HandShake Completed Between Replica and Master")
+	slog.Info("Connected to Master Node. ", slog.Any("Address", conn.RemoteAddr().String()))
+
+	rdbSnapshot, err := parser.ParseRDb(conn)
+	if err != nil {
+		if err == io.EOF {
+			slog.Info("Connection Closed")
+			return
+		}
+		slog.Error("Error while reading the rdbSnapshot", slog.Any("details", err))
+	} else {
+		slog.Info("Received RDB Snapshot")
+		slog.Info(rdbSnapshot)
+	}
+
+	for {
+		response, err := parser.Parse(conn)
+		if err != nil {
+			if err == io.EOF {
+				slog.Info("Connection Closed")
+				return
+			}
+			slog.Error("Error received from master.", slog.Any("details", err))
+		}
+
+		slog.Info("Response Details: ", slog.Any("got", response.String()))
+	}
 
 }

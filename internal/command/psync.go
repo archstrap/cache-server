@@ -25,7 +25,7 @@ func (p *Psync) Process(input *model.RespValue) *model.RespOutput {
 
 	offset, err := strconv.Atoi(args[2])
 	if err != nil {
-		return model.NewRespOutput(model.TypeArray, err)
+		return model.NewRespOutput(model.TypeError, err)
 	}
 
 	var result string

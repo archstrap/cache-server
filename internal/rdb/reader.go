@@ -2,6 +2,7 @@ package rdb
 
 import (
 	"bufio"
+	"encoding/base64"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -323,4 +324,24 @@ func (r *RDBReader) Close() {
 		return
 	}
 	r.file.Close()
+}
+
+func GetRDBSnapshot() []byte {
+	base64EncodeData := GetRDBSnapshotContent()
+	data, err := base64.StdEncoding.DecodeString(base64EncodeData)
+	if err != nil {
+		slog.Error("Unable to convert base64 encoded data.", slog.Any("ErrorDetails", err))
+		return []byte{}
+	}
+
+	result := fmt.Appendf(nil, "$%d\r\n", len(data))
+	result = append(result, data...)
+	return result
+
+}
+
+func GetRDBSnapshotContent() string {
+
+	// empty rdb contentents
+	return "UkVESVMwMDEx+glyZWRpcy12ZXIFNy4yLjD6CnJlZGlzLWJpdHPAQPoFY3RpbWXCbQi8ZfoIdXNlZC1tZW3CsMQQAPoIYW9mLWJhc2XAAP/wbjv+wP9aog=="
 }
