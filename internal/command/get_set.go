@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/archstrap/cache-server/internal/replication"
 	"github.com/archstrap/cache-server/pkg/model"
 )
 
@@ -28,9 +29,12 @@ type Cache struct {
 	data map[string]CacheItem
 }
 
-var CacheStore = &Cache{
-	data: make(map[string]CacheItem),
-}
+var (
+	CacheStore *Cache = &Cache{
+		data: make(map[string]CacheItem),
+	}
+	Replications *replication.ReplicationStore = replication.GetReplicationStore()
+)
 
 var SetCommandInstance = &SetCommand{
 	CommandName: "SET",
@@ -122,6 +126,8 @@ func (command *SetCommand) Process(value *model.RespValue) *model.RespOutput {
 	key := data[1]
 	val := data[2]
 	CacheStore.data[key] = CacheItem{item: val, expiresAt: expiresAt}
+
+	go Replications.Propagate(value)
 
 	return model.NewRespOutput(model.TypeSimpleString, "OK")
 }
