@@ -40,7 +40,7 @@ func (conn *RedisTask) exec() {
 			}
 
 			factory := command.GetCommandHandlerFactory()
-			output := factory.ProcessCommand(data)
+			output := factory.ProcessCommand(connection, data)
 			_, err = connection.Write([]byte(output))
 
 			if err != nil {

@@ -1,9 +1,6 @@
 package command
 
 import (
-	"fmt"
-
-	"github.com/archstrap/cache-server/internal/replication"
 	"github.com/archstrap/cache-server/pkg/model"
 )
 
@@ -21,11 +18,5 @@ func (r *ReplConf) Process(input *model.RespValue) *model.RespOutput {
 	if len(args) < 3 {
 		return model.NewWrongNumberOfOutput("REPLCONF")
 	}
-
-	if args[1] == "listening-port" {
-		store := replication.GetReplicationStore()
-		store.AddReplication(fmt.Sprintf(":%s", args[2]))
-	}
-
 	return model.NewRespOutput(model.TypeSimpleString, "OK")
 }

@@ -9,11 +9,14 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
+	"github.com/archstrap/cache-server/internal/command"
 	"github.com/archstrap/cache-server/internal/config"
 	"github.com/archstrap/cache-server/internal/eventloop"
 	"github.com/archstrap/cache-server/internal/rdb"
 	"github.com/archstrap/cache-server/internal/replication"
+	"github.com/archstrap/cache-server/internal/scheduler"
 )
 
 type Server struct {
@@ -53,6 +56,8 @@ func (server *Server) Start(ctx context.Context) {
 	}
 	// print banner
 	printBanner()
+	// Initiate Command Factory Handlers
+	command.GetCommandHandlerFactory()
 	replication.InitFromConfig()
 	slog.Info("Cache server started at", slog.String("port", server.address))
 
@@ -69,6 +74,8 @@ func (server *Server) Start(ctx context.Context) {
 
 	go closeClientConnection(ctx, listener)
 	go handleIncomingRequests(listener, eventLoop, &wg, ctx)
+
+	go scheduler.MonitorReplicaConnections(ctx, 5*time.Second)
 
 	wg.Wait()
 }

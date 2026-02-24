@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/archstrap/cache-server/internal/config"
+	"github.com/archstrap/cache-server/internal/shared"
 	"github.com/archstrap/cache-server/pkg/model"
 	"github.com/archstrap/cache-server/pkg/parser"
 )
@@ -131,6 +132,20 @@ func initiateHandShake(conn net.Conn) {
 		}
 
 		slog.Info("Response Details: ", slog.Any("got", response.String()))
+		processor := shared.GetCommandProcessor()
+		if processor == nil {
+			slog.Error("Set Processor")
+			return
+		}
+		processor.ProcessCommandsSilently(response)
+		// if _, err := conn.Write([]byte(output)); err != nil {
+		//
+		// 	if err == io.EOF {
+		// 		slog.Info("Connection Closed")
+		// 		return
+		// 	}
+		// 	slog.Error("Error while writing command output back to master", slog.Any("details", err))
+		// }
 	}
 
 }

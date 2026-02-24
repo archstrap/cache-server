@@ -2,9 +2,12 @@ package command
 
 import (
 	"log/slog"
+	"net"
 	"strings"
 	"sync"
 
+	"github.com/archstrap/cache-server/internal/replication"
+	"github.com/archstrap/cache-server/internal/shared"
 	"github.com/archstrap/cache-server/pkg/model"
 	"github.com/archstrap/cache-server/pkg/parser"
 )
@@ -21,12 +24,16 @@ func NewCommandHandlerFactory() *HandlerFactory {
 		handlers: make(map[string]ICommand),
 	}
 	handlerFactory.registerAllCommands()
+	shared.SetCommandProcessor(handlerFactory)
 	return handlerFactory
 }
 
 var (
 	handlerFactoryInstance *HandlerFactory
 	mu                     sync.Mutex
+	modifiableCommands     map[string]bool = map[string]bool{
+		"SET": true,
+	}
 )
 
 func GetCommandHandlerFactory() *HandlerFactory {
@@ -80,13 +87,53 @@ func getOrDefault(mp map[string]ICommand, key string, defaultValue ICommand) ICo
 	return value
 }
 
-func (hcf *HandlerFactory) ProcessCommand(input *model.RespValue) string {
+func (hcf *HandlerFactory) ProcessCommand(conn net.Conn, input *model.RespValue) string {
 	command := strings.ToUpper(strings.TrimSpace(input.Command))
 
-	slog.Info("Received command", "command", command)
+	slog.Info("Start Processing ", slog.Any("command", input.Command))
+	MonitorReplicaConnectionIfPossible(conn, input)
 
 	iCommand := getOrDefault(hcf.handlers, command, &UnknownCommand{CommandName: "UNKNOWN"})
+	// process the output
 	respOutput := iCommand.Process(input)
+
+	AddPropagationIfPossible(input, respOutput)
+
 	return parser.ParseOutput(respOutput)
 
+}
+
+func (hcf *HandlerFactory) ProcessCommandsSilently(input *model.RespValue) string {
+	command := strings.ToUpper(strings.TrimSpace(input.Command))
+
+	slog.Info("Start Processing Silently", slog.Any("command", input.Command))
+
+	iCommand := getOrDefault(hcf.handlers, command, &UnknownCommand{CommandName: "UNKNOWN"})
+	// process the output
+	respOutput := iCommand.Process(input)
+
+	return parser.ParseOutput(respOutput)
+
+}
+
+func MonitorReplicaConnectionIfPossible(conn net.Conn, input *model.RespValue) {
+	if input.Command == "REPLCONF" {
+		args := input.ArgsToStringSlice()
+		if args[1] == "listening-port" {
+			port := args[2]
+			replication.GetReplicationStore().Add(conn, port)
+		}
+	}
+}
+
+func AddPropagationIfPossible(input *model.RespValue, output *model.RespOutput) {
+	// if we are getting non error message we are going to propagate the WRITE commands to replica
+	command := strings.ToUpper(input.Command)
+
+	if !modifiableCommands[command] || output.RespType == model.TypeError {
+		slog.Info("Not able to propagate commands")
+		return
+	}
+
+	go replication.GetReplicationStore().Propagate(input)
 }
