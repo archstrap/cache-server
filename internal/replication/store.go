@@ -103,7 +103,7 @@ func (s *ReplicationStore) Propagate(input *model.RespValue) {
 	slog.Info("Propagation Initiated")
 
 	for i := range s.replications {
-		s.replications[i].Propagate(input)
+		go s.replications[i].Propagate(input)
 	}
 }
 
@@ -112,8 +112,7 @@ func (s *ReplicationStore) ActiveReplicationCount() int {
 }
 
 func (s *ReplicationStore) PrintState() {
-	s.lock.RLock()
-	defer s.lock.RUnlock()
+
 	slog.Info("Active ReplicationStore", slog.Any("count", s.ActiveReplicationCount()))
 	fmt.Println("Following Active Replications are listed below")
 	for i := range s.replications {
