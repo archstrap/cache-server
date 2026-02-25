@@ -14,9 +14,16 @@ func (r *ReplConf) Name() string {
 
 func (r *ReplConf) Process(input *model.RespValue) *model.RespOutput {
 
-	args := input.Value.([]string)
+	args := input.ArgsToStringSlice()
 	if len(args) < 3 {
 		return model.NewWrongNumberOfOutput("REPLCONF")
+	}
+
+	subCommand := args[1]
+	switch subCommand {
+	case "GETACK":
+		return model.NewRespOutput(model.TypeArray, []string{"REPLCONF", "ACK", "0"})
+	default:
 	}
 	return model.NewRespOutput(model.TypeSimpleString, "OK")
 }

@@ -1,9 +1,13 @@
 package shared
 
-import "github.com/archstrap/cache-server/pkg/model"
+import (
+	"net"
+
+	"github.com/archstrap/cache-server/pkg/model"
+)
 
 type CommandProcessor interface {
-	ProcessCommandsSilently(input *model.RespValue) string
+	Process(conn net.Conn, input *model.RespValue)
 }
 
 var CommandProcessorInstance CommandProcessor

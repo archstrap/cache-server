@@ -97,17 +97,21 @@ func (hcf *HandlerFactory) ProcessCommand(conn net.Conn, input *model.RespValue)
 
 }
 
-func (hcf *HandlerFactory) ProcessCommandsSilently(input *model.RespValue) string {
+func (hcf *HandlerFactory) Process(conn net.Conn, input *model.RespValue) {
 	command := strings.ToUpper(strings.TrimSpace(input.Command))
 
 	slog.Info("Start Processing Silently", slog.Any("command", input.Command))
 
 	iCommand := getOrDefault(hcf.handlers, command, &UnknownCommand{CommandName: "UNKNOWN"})
 	// process the output
-	respOutput := iCommand.Process(input)
+	result := iCommand.Process(input)
 
-	return parser.ParseOutput(respOutput)
-
+	if command == "REPLCONF" {
+		output := parser.ParseOutput(result)
+		if _, err := conn.Write([]byte(output)); err != nil {
+			slog.Error("Error Occurred while responding back to REPLCONF command.", slog.Any("Details", err))
+		}
+	}
 }
 
 func MonitorReplicaConnectionIfPossible(conn net.Conn, input *model.RespValue) {

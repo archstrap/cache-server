@@ -135,11 +135,7 @@ func initiateHandShake(conn net.Conn) {
 
 		slog.Info("Response Details: ", slog.Any("got", response.String()))
 		processor := shared.GetCommandProcessor()
-		if processor == nil {
-			slog.Error("Set Processor")
-			return
-		}
-		processor.ProcessCommandsSilently(response)
+		processor.Process(conn, response)
 		// if _, err := conn.Write([]byte(output)); err != nil {
 		//
 		// 	if err == io.EOF {
