@@ -49,7 +49,7 @@ func (conn *RedisTask) exec() {
 				slog.Error("Error while sending outputs .", slog.Any("details", err))
 				break
 			}
-			go sendExtraPayloadIfPossible(connection, output)
+			sendExtraPayloadIfPossible(connection, output)
 		}
 
 	}

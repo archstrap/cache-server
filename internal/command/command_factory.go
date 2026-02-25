@@ -112,6 +112,9 @@ func (hcf *HandlerFactory) Process(conn net.Conn, input *model.RespValue) {
 			slog.Error("Error Occurred while responding back to REPLCONF command.", slog.Any("Details", err))
 		}
 	}
+
+	ReplConfCommandInstance.UpdateOffSet(input)
+
 }
 
 func MonitorReplicaConnectionIfPossible(conn net.Conn, input *model.RespValue) {
