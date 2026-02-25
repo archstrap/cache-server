@@ -15,9 +15,16 @@ func ParseOutput(result *model.RespOutput) string {
 		return parseBulkStringOutput(result)
 	case model.TypeArray:
 		return parseArrayOutput(result)
+	case model.TypeInteger:
+		return parseIntegerOutput(result)
 	}
 
 	return "+OK\r\n"
+}
+
+func parseIntegerOutput(result *model.RespOutput) string {
+	data := result.Data.(int)
+	return fmt.Sprintf("%s%d\r\n", string(result.RespType), data)
 }
 
 func parseArrayOutput(result *model.RespOutput) string {

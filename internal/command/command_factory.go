@@ -65,6 +65,7 @@ func (hcf *HandlerFactory) registerAllCommands() {
 	commandHandlers = append(commandHandlers, InfoCommandInstance)
 	commandHandlers = append(commandHandlers, ReplConfCommandInstance)
 	commandHandlers = append(commandHandlers, PsyncInstance)
+	commandHandlers = append(commandHandlers, WaitCommandInstance)
 	commandHandlers = append(commandHandlers, &UnknownCommand{CommandName: "UNKNOWN"})
 
 	for _, handler := range commandHandlers {
