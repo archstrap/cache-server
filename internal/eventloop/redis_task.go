@@ -10,6 +10,7 @@ import (
 
 	"github.com/archstrap/cache-server/internal/command"
 	"github.com/archstrap/cache-server/internal/rdb"
+	"github.com/archstrap/cache-server/internal/replication"
 	parserLib "github.com/archstrap/cache-server/pkg/parser"
 )
 
@@ -21,6 +22,7 @@ type RedisTask struct {
 func (conn *RedisTask) exec() {
 
 	connection := conn.Connection
+	parser := parserLib.NewRespParser(connection)
 
 	for {
 		select {
@@ -29,7 +31,7 @@ func (conn *RedisTask) exec() {
 			return
 
 		default:
-			data, err := parserLib.Parse(connection)
+			data, err := parser.Parse()
 			if err != nil {
 				if err == io.EOF {
 					slog.Info("Client disconnected", "address", connection.RemoteAddr())
@@ -63,7 +65,9 @@ func sendExtraPayloadIfPossible(conn net.Conn, output string) {
 		if err != nil {
 			slog.Error("Error while sending RDB snapshots. ", slog.Any("details", err))
 		} else {
-			slog.Info("rdb snapshots sent to", slog.Any("details", conn.RemoteAddr().String()))
+			replication.GetReplicationStore().Add(conn)
+			slog.Info("rdb snapshots sent and registered to master's replication store",
+				slog.Any("details", conn.RemoteAddr().String()))
 		}
 	}
 

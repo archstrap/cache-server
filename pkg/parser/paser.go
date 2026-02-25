@@ -11,9 +11,19 @@ import (
 	"github.com/archstrap/cache-server/pkg/model"
 )
 
-func Parse(ioReader io.Reader) (*model.RespValue, error) {
+type RespParser struct {
+	reader *bufio.Reader
+}
 
-	reader := bufio.NewReader(ioReader)
+func NewRespParser(reader io.Reader) *RespParser {
+	return &RespParser{
+		reader: bufio.NewReader(reader),
+	}
+}
+
+func (r *RespParser) Parse() (*model.RespValue, error) {
+
+	reader := r.reader
 	typeByte, err := reader.ReadByte()
 
 	if err != nil {
@@ -124,8 +134,8 @@ func parseArray(reader *bufio.Reader) ([]string, error) {
 
 }
 
-func ParseRDb(reader io.Reader) (string, error) {
-	bufReader := bufio.NewReader(reader)
+func (r *RespParser) ParseRDb() (string, error) {
+	bufReader := r.reader
 	typeByte, _ := bufReader.ReadByte()
 	if typeByte != '$' {
 		return "", fmt.Errorf("Unknown type received. %s", string(typeByte))

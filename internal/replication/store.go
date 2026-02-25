@@ -42,22 +42,23 @@ func (r *ReplicationDetails) Propagate(input *model.RespValue) {
 		return
 	}
 
-	data, err := parser.Parse(conn)
-	if err != nil {
-		if err == io.EOF {
-			slog.Info("Connection Closed while sending the details to replica", slog.Any("Details", r.GetTcpAddr()))
-			return
-		}
-		slog.Error("Unable to Send data to replica", slog.Any("input", input.String()))
-		return
-	}
-
-	slog.Info("", "Received from replica ", slog.Any("addr", r.GetTcpAddr()), slog.Any("out", data.String()))
+	// data, err := parser.Parse(conn)
+	// if err != nil {
+	// 	if err == io.EOF {
+	// 		slog.Info("Connection Closed while sending the details to replica", slog.Any("Details", r.GetTcpAddr()))
+	// 		return
+	// 	}
+	// 	slog.Error("Unable to Send data to replica", slog.Any("input", input.String()))
+	// 	return
+	// }
+	//
+	// slog.Info("", "Received from replica ", slog.Any("addr", r.GetTcpAddr()), slog.Any("out", data.String()))
 }
 
 type ReplicationStore struct {
-	replications []*ReplicationDetails
-	lock         sync.RWMutex
+	replications    []*ReplicationDetails
+	lock            sync.RWMutex
+	pendingReplicas map[net.Conn]string
 }
 
 var (
@@ -73,7 +74,8 @@ func InitReplicationStore() {
 			defer lock.Unlock()
 
 			replicationStores = &ReplicationStore{
-				replications: make([]*ReplicationDetails, 0),
+				replications:    make([]*ReplicationDetails, 0),
+				pendingReplicas: make(map[net.Conn]string),
 			}
 
 		}
@@ -86,9 +88,22 @@ func GetReplicationStore() *ReplicationStore {
 	return replicationStores
 }
 
-func (s *ReplicationStore) Add(conn net.Conn, port string) {
+func (s *ReplicationStore) AddInPending(conn net.Conn, port string) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
+
+	s.pendingReplicas[conn] = port
+
+}
+
+func (s *ReplicationStore) Add(conn net.Conn) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	port, ok := s.pendingReplicas[conn]
+	if ok {
+		delete(s.pendingReplicas, conn)
+	}
 
 	s.replications = append(s.replications, NewReplicationDetails(conn, port))
 	slog.Info("Added Replica Connection ", slog.Any("Details", port))

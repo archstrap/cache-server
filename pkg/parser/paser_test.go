@@ -11,8 +11,8 @@ import (
 func TestParseInteger(t *testing.T) {
 
 	reader := strings.NewReader(":2\r\n")
-
-	value, err := Parse(reader)
+	parser := NewRespParser(reader)
+	value, err := parser.Parse()
 
 	assert.Equal(t, err, nil)
 	assert.Equal(t, value.Value, 2)
@@ -24,7 +24,8 @@ func TestParseSimpleString(t *testing.T) {
 
 	reader := strings.NewReader("+OK\r\n")
 
-	value, err := Parse(reader)
+	parser := NewRespParser(reader)
+	value, err := parser.Parse()
 
 	assert.Equal(t, err, nil)
 	assert.Equal(t, value.Value, "OK")
@@ -35,7 +36,9 @@ func TestParseSimpleString(t *testing.T) {
 func TestParseBulkString(t *testing.T) {
 	reader := strings.NewReader("$3\r\nGET\r\n")
 
-	value, err := Parse(reader)
+	parser := NewRespParser(reader)
+	value, err := parser.Parse()
+
 	assert.Equal(t, err, nil)
 	assert.Equal(t, value.Value, "GET")
 	assert.Equal(t, value.DataType, model.TypeBulkString)
@@ -45,7 +48,8 @@ func TestParseBulkString(t *testing.T) {
 func TestParseArray(t *testing.T) {
 	reader := strings.NewReader("*1\r\n$3\r\nGET\r\n")
 
-	value, err := Parse(reader)
+	parser := NewRespParser(reader)
+	value, err := parser.Parse()
 
 	assert.Equal(t, err, nil)
 	// TODO add matches

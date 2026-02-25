@@ -94,10 +94,12 @@ func initiateHandShake(conn net.Conn) {
 	commands = append(commands, []string{"REPLCONF", "capa", "psync2"})
 	commands = append(commands, []string{"PSYNC", "?", "-1"})
 
+	respParser := parser.NewRespParser(conn)
+
 	for no := range commands {
 		serializedCommand := parser.ParseOutput(model.NewRespOutput(model.TypeArray, commands[no]))
 		conn.Write([]byte(serializedCommand))
-		response, err := parser.Parse(conn)
+		response, err := respParser.Parse()
 		if err != nil {
 			slog.Error("Unable to get response from master.", slog.Any("details", err))
 			return
@@ -109,7 +111,7 @@ func initiateHandShake(conn net.Conn) {
 	slog.Info("HandShake Completed Between Replica and Master")
 	slog.Info("Connected to Master Node. ", slog.Any("Address", conn.RemoteAddr().String()))
 
-	rdbSnapshot, err := parser.ParseRDb(conn)
+	rdbSnapshot, err := respParser.ParseRDb()
 	if err != nil {
 		if err == io.EOF {
 			slog.Info("Connection Closed")
@@ -122,7 +124,7 @@ func initiateHandShake(conn net.Conn) {
 	}
 
 	for {
-		response, err := parser.Parse(conn)
+		response, err := respParser.Parse()
 		if err != nil {
 			if err == io.EOF {
 				slog.Info("Connection Closed")

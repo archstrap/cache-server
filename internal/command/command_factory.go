@@ -6,6 +6,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/archstrap/cache-server/internal/config"
 	"github.com/archstrap/cache-server/internal/replication"
 	"github.com/archstrap/cache-server/internal/shared"
 	"github.com/archstrap/cache-server/pkg/model"
@@ -17,8 +18,6 @@ type HandlerFactory struct {
 }
 
 func NewCommandHandlerFactory() *HandlerFactory {
-
-	slog.Info("Command Handlers Initialized")
 
 	handlerFactory := &HandlerFactory{
 		handlers: make(map[string]ICommand),
@@ -43,13 +42,8 @@ func GetCommandHandlerFactory() *HandlerFactory {
 		defer mu.Unlock()
 		if handlerFactoryInstance == nil {
 			handlerFactoryInstance = NewCommandHandlerFactory()
-		} else {
-			slog.Info("Giving Existing Initialized Handlers - 1")
 		}
-	} else {
-		slog.Info("Giving Existing Initialized Handlers - 2")
 	}
-
 	return handlerFactoryInstance
 }
 
@@ -91,12 +85,12 @@ func (hcf *HandlerFactory) ProcessCommand(conn net.Conn, input *model.RespValue)
 	command := strings.ToUpper(strings.TrimSpace(input.Command))
 
 	slog.Info("Start Processing ", slog.Any("command", input.Command))
-	MonitorReplicaConnectionIfPossible(conn, input)
 
 	iCommand := getOrDefault(hcf.handlers, command, &UnknownCommand{CommandName: "UNKNOWN"})
 	// process the output
 	respOutput := iCommand.Process(input)
 
+	MonitorReplicaConnectionIfPossible(conn, input)
 	AddPropagationIfPossible(input, respOutput)
 
 	return parser.ParseOutput(respOutput)
@@ -121,7 +115,7 @@ func MonitorReplicaConnectionIfPossible(conn net.Conn, input *model.RespValue) {
 		args := input.ArgsToStringSlice()
 		if args[1] == "listening-port" {
 			port := args[2]
-			replication.GetReplicationStore().Add(conn, port)
+			replication.GetReplicationStore().AddInPending(conn, port)
 		}
 	}
 }
@@ -130,8 +124,7 @@ func AddPropagationIfPossible(input *model.RespValue, output *model.RespOutput) 
 	// if we are getting non error message we are going to propagate the WRITE commands to replica
 	command := strings.ToUpper(input.Command)
 
-	if !modifiableCommands[command] || output.RespType == model.TypeError {
-		slog.Info("Not able to propagate commands")
+	if config.Store["replicaof"] != "" || !modifiableCommands[command] || output.RespType == model.TypeError {
 		return
 	}
 
