@@ -7,8 +7,10 @@ import (
 	"net"
 	"sync"
 
+	"github.com/archstrap/cache-server/internal/shared"
 	"github.com/archstrap/cache-server/pkg/model"
 	"github.com/archstrap/cache-server/pkg/parser"
+	"github.com/archstrap/cache-server/util"
 )
 
 type ReplicationDetails struct {
@@ -31,7 +33,7 @@ func (r *ReplicationDetails) GetTcpAddr() string {
 func (r *ReplicationDetails) Propagate(input *model.RespValue) {
 
 	conn := r.conn
-	command := model.NewRespOutput(input.DataType, input.Value)
+	command := input.ToRespOutput()
 	bytes := parser.ParseOutput(command)
 	if _, err := conn.Write([]byte(bytes)); err != nil {
 		if err == io.EOF {
@@ -42,17 +44,6 @@ func (r *ReplicationDetails) Propagate(input *model.RespValue) {
 		return
 	}
 
-	// data, err := parser.Parse(conn)
-	// if err != nil {
-	// 	if err == io.EOF {
-	// 		slog.Info("Connection Closed while sending the details to replica", slog.Any("Details", r.GetTcpAddr()))
-	// 		return
-	// 	}
-	// 	slog.Error("Unable to Send data to replica", slog.Any("input", input.String()))
-	// 	return
-	// }
-	//
-	// slog.Info("", "Received from replica ", slog.Any("addr", r.GetTcpAddr()), slog.Any("out", data.String()))
 }
 
 type ReplicationStore struct {
@@ -116,10 +107,15 @@ func (s *ReplicationStore) Propagate(input *model.RespValue) {
 	}
 
 	slog.Info("Propagation Initiated")
+	if util.IsInputGetAck(input) {
+		shared.InitAckState(len(s.replications))
+		slog.Info("acknowledgement state initiated")
+	}
 
 	for i := range s.replications {
 		go s.replications[i].Propagate(input)
 	}
+
 }
 
 func (s *ReplicationStore) ActiveReplicationCount() int {

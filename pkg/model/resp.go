@@ -26,6 +26,10 @@ func (r *RespValue) ArgsToStringSlice() []string {
 	return r.Value.([]string)
 }
 
+func (r *RespValue) ToRespOutput() *RespOutput {
+	return NewRespOutput(r.DataType, r.Value)
+}
+
 type RespOutput struct {
 	RespType RespType
 	Data     any

@@ -6,5 +6,5 @@ import (
 )
 
 func GetBytes(input *model.RespValue) int {
-	return len(parser.ParseOutput(model.NewRespOutput(input.DataType, input.Value)))
+	return len(parser.ParseOutput(input.ToRespOutput()))
 }

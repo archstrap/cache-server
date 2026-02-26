@@ -12,6 +12,7 @@ import (
 	"github.com/archstrap/cache-server/internal/rdb"
 	"github.com/archstrap/cache-server/internal/replication"
 	parserLib "github.com/archstrap/cache-server/pkg/parser"
+	"github.com/archstrap/cache-server/util"
 )
 
 type RedisTask struct {
@@ -43,6 +44,10 @@ func (conn *RedisTask) exec() {
 
 			factory := command.GetCommandHandlerFactory()
 			output := factory.ProcessCommand(connection, data)
+			// for ACK subcommand we don't have to respond
+			if util.IsInputAck(data) {
+				continue
+			}
 			_, err = connection.Write([]byte(output))
 
 			if err != nil {

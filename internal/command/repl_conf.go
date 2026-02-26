@@ -3,6 +3,7 @@ package command
 import (
 	"strconv"
 
+	"github.com/archstrap/cache-server/internal/shared"
 	"github.com/archstrap/cache-server/pkg/model"
 	"github.com/archstrap/cache-server/util"
 )
@@ -28,6 +29,14 @@ func (r *ReplConf) Process(input *model.RespValue) *model.RespOutput {
 	switch subCommand {
 	case "GETACK":
 		return model.NewRespOutput(model.TypeArray, []string{"REPLCONF", "ACK", strconv.Itoa(r.offset)})
+	case "ACK":
+		replicationOffset, err := strconv.Atoi(args[2])
+		if err != nil {
+			return model.NewRespOutput(model.TypeError, err.Error())
+		}
+		communication := shared.GeAckState().GetCommunication()
+		communication <- replicationOffset
+
 	default:
 	}
 	return model.NewRespOutput(model.TypeSimpleString, "OK")

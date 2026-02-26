@@ -11,6 +11,7 @@ import (
 	"github.com/archstrap/cache-server/internal/shared"
 	"github.com/archstrap/cache-server/pkg/model"
 	"github.com/archstrap/cache-server/pkg/parser"
+	"github.com/archstrap/cache-server/util"
 )
 
 type HandlerFactory struct {
@@ -109,6 +110,7 @@ func (hcf *HandlerFactory) Process(conn net.Conn, input *model.RespValue) {
 
 	if command == "REPLCONF" {
 		output := parser.ParseOutput(result)
+		slog.Info("Sending back from replica ", slog.Any("details", output))
 		if _, err := conn.Write([]byte(output)); err != nil {
 			slog.Error("Error Occurred while responding back to REPLCONF command.", slog.Any("Details", err))
 		}
@@ -137,4 +139,6 @@ func AddPropagationIfPossible(input *model.RespValue, output *model.RespOutput) 
 	}
 
 	go replication.GetReplicationStore().Propagate(input)
+	// it is a write command so we can increment the master offset
+	replication.GetServerState().IncrementMasterState(util.GetBytes(input))
 }

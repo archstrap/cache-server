@@ -5,7 +5,9 @@ import (
 	"io"
 	"log/slog"
 	"net"
+	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/archstrap/cache-server/internal/config"
 	"github.com/archstrap/cache-server/internal/shared"
@@ -15,10 +17,31 @@ import (
 
 // State holds replication role and metadata (master_replid, master_repl_offset, etc.).
 type State struct {
-	details map[string]string
+	details      map[string]string
+	masterOffset int
+	lock         sync.RWMutex
 }
 
 var state *State
+
+func (s *State) GetMasterState() int {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
+	return s.masterOffset
+
+}
+
+func GetServerState() *State {
+	return state
+}
+
+func (s *State) IncrementMasterState(offsetBytes int) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	s.masterOffset += offsetBytes
+	s.details["master_repl_offset"] = strconv.Itoa(s.masterOffset)
+}
 
 // InitFromConfig sets replication mode from config (ReplicaOf) and initializes state.
 // Call once at startup after config.ReadFlags().
@@ -37,6 +60,7 @@ func initAsMaster() {
 			"master_replid":      GetServerReplicationID(),
 			"master_repl_offset": "0",
 		},
+		masterOffset: 0,
 	}
 	slog.Info("server started as Master Node")
 	slog.Info("replication details", slog.Any("details", FormatDetails()))
