@@ -11,7 +11,6 @@ import (
 	"sync"
 	// "time"
 
-	"github.com/archstrap/cache-server/internal/command"
 	"github.com/archstrap/cache-server/internal/config"
 	"github.com/archstrap/cache-server/internal/eventloop"
 	"github.com/archstrap/cache-server/internal/rdb"
@@ -56,8 +55,6 @@ func (server *Server) Start(ctx context.Context) {
 	}
 	// print banner
 	printBanner()
-	// Initiate Command Factory Handlers
-	command.GetCommandHandlerFactory()
 	replication.InitFromConfig()
 	slog.Info("Cache server started at", slog.String("port", server.address))
 

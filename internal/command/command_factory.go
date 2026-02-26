@@ -29,30 +29,34 @@ func NewCommandHandlerFactory() *HandlerFactory {
 }
 
 var (
-	handlerFactoryInstance *HandlerFactory
-	mu                     sync.Mutex
-	modifiableCommands     map[string]bool = map[string]bool{
+	Registry           *HandlerFactory
+	mu                 sync.Mutex
+	modifiableCommands map[string]bool = map[string]bool{
 		"SET": true,
 	}
 )
 
+func init() {
+	Registry = NewCommandHandlerFactory()
+}
+
 func GetCommandHandlerFactory() *HandlerFactory {
 
-	if handlerFactoryInstance == nil {
+	if Registry == nil {
 		mu.Lock()
 		defer mu.Unlock()
-		if handlerFactoryInstance == nil {
-			handlerFactoryInstance = NewCommandHandlerFactory()
+		if Registry == nil {
+			Registry = NewCommandHandlerFactory()
 		}
 	}
-	return handlerFactoryInstance
+	return Registry
 }
 
-func (hcf *HandlerFactory) registerCommandHandler(command ICommand) {
-	hcf.handlers[command.Name()] = command
+func (cR *HandlerFactory) RegisterCommand(command ICommand) {
+	cR.handlers[command.Name()] = command
 }
 
-func (hcf *HandlerFactory) registerAllCommands() {
+func (cR *HandlerFactory) registerAllCommands() {
 
 	var commandHandlers []ICommand
 
@@ -71,7 +75,7 @@ func (hcf *HandlerFactory) registerAllCommands() {
 	commandHandlers = append(commandHandlers, &UnknownCommand{CommandName: "UNKNOWN"})
 
 	for _, handler := range commandHandlers {
-		hcf.registerCommandHandler(handler)
+		cR.RegisterCommand(handler)
 	}
 
 }
@@ -84,12 +88,12 @@ func getOrDefault(mp map[string]ICommand, key string, defaultValue ICommand) ICo
 	return value
 }
 
-func (hcf *HandlerFactory) ProcessCommand(conn net.Conn, input *model.RespValue) string {
+func (cR *HandlerFactory) ProcessCommand(conn net.Conn, input *model.RespValue) string {
 	command := strings.ToUpper(strings.TrimSpace(input.Command))
 
 	slog.Info("Start Processing ", slog.Any("command", input.Command))
 
-	iCommand := getOrDefault(hcf.handlers, command, &UnknownCommand{CommandName: "UNKNOWN"})
+	iCommand := getOrDefault(cR.handlers, command, &UnknownCommand{CommandName: "UNKNOWN"})
 	// process the output
 	respOutput := iCommand.Process(input)
 
@@ -100,12 +104,12 @@ func (hcf *HandlerFactory) ProcessCommand(conn net.Conn, input *model.RespValue)
 
 }
 
-func (hcf *HandlerFactory) Process(conn net.Conn, input *model.RespValue) {
+func (cR *HandlerFactory) Process(conn net.Conn, input *model.RespValue) {
 	command := strings.ToUpper(strings.TrimSpace(input.Command))
 
 	slog.Info("Start Processing Silently", slog.Any("command", input.Command))
 
-	iCommand := getOrDefault(hcf.handlers, command, &UnknownCommand{CommandName: "UNKNOWN"})
+	iCommand := getOrDefault(cR.handlers, command, &UnknownCommand{CommandName: "UNKNOWN"})
 	// process the output
 	result := iCommand.Process(input)
 

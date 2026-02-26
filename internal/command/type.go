@@ -3,6 +3,7 @@ package command
 import (
 	"time"
 
+	"github.com/archstrap/cache-server/internal/store"
 	"github.com/archstrap/cache-server/pkg/model"
 )
 
@@ -33,6 +34,10 @@ func (t *TypeCommand) Process(input *model.RespValue) *model.RespOutput {
 		} else {
 			resultType = string(val.valueType)
 		}
+	}
+
+	if store.StreamStoreInstance.ContainsKey(key) {
+		resultType = "stream"
 	}
 
 	return model.NewRespOutput(model.TypeSimpleString, resultType)
