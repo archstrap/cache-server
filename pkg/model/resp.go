@@ -12,6 +12,18 @@ const (
 	TypeError        RespType = '-'
 )
 
+type ValueType string
+
+const (
+	ValueTypeString    ValueType = "string"
+	ValueTypeList      ValueType = "list"
+	ValueTypeSet       ValueType = "set"
+	ValueTypeZset      ValueType = "zset"
+	ValueTypeHash      ValueType = "hash"
+	ValueTypeStream    ValueType = "stream"
+	ValueTypeVectorSet ValueType = "vectorset"
+)
+
 type RespValue struct {
 	DataType RespType
 	Value    any

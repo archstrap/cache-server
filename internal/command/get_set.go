@@ -21,6 +21,7 @@ type SetCommand struct {
 type CacheItem struct {
 	item      any
 	expiresAt time.Time
+	valueType model.ValueType
 }
 
 type Cache struct {
@@ -123,7 +124,8 @@ func (command *SetCommand) Process(value *model.RespValue) *model.RespOutput {
 
 	key := data[1]
 	val := data[2]
-	CacheStore.data[key] = CacheItem{item: val, expiresAt: expiresAt}
+	valueType := model.ValueTypeString
+	CacheStore.data[key] = CacheItem{item: val, expiresAt: expiresAt, valueType: valueType}
 
 	return model.NewRespOutput(model.TypeSimpleString, "OK")
 }
