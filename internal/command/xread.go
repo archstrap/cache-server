@@ -1,10 +1,10 @@
 package command
 
 import (
-	"log/slog"
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/archstrap/cache-server/internal/store"
 	"github.com/archstrap/cache-server/pkg/model"
@@ -24,6 +24,7 @@ func (x *XREAD) Name() string {
 
 func (x *XREAD) Process(input *model.RespValue) *model.RespOutput {
 
+	startTime := time.Now()
 	args := input.ArgsToStringSlice()
 	n := len(args)
 
@@ -34,10 +35,17 @@ func (x *XREAD) Process(input *model.RespValue) *model.RespOutput {
 	end := remaining / 2
 	storage := store.StreamStoreInstance
 	items := make([]*store.Pair[string, string], 0)
+	dollarExists := slices.Contains(args, "$")
 
 	for i := streamIndex + 1; i <= streamIndex+end; i++ {
 		key := args[i]
-		id := args[i+end]
+		var id string
+
+		if dollarExists {
+			id = "$"
+		} else {
+			id = args[i+end]
+		}
 
 		var item *store.Pair[string, string] = store.NewPair(key, id)
 		items = append(items, item)
@@ -53,8 +61,7 @@ func (x *XREAD) Process(input *model.RespValue) *model.RespOutput {
 		result = storage.SearchExclusiveWithoutBlock(items)
 	} else {
 		timeOut, _ := strconv.Atoi(args[blockIndex+1])
-		slog.Info("XREAD", slog.Any("timeOut", timeOut))
-		result = storage.SearchExclusiveWithBlock(items, timeOut)
+		result = storage.SearchExclusiveWithBlock(items, timeOut, dollarExists, startTime)
 	}
 
 	return model.NewRespOutput(model.TypeArray, result)

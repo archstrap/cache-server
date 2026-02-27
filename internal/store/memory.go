@@ -9,13 +9,15 @@ import (
 )
 
 type StreamStore struct {
-	store map[string][]map[string]string
-	lock  sync.RWMutex
-	cond  *sync.Cond
+	store     map[string][]map[string]string
+	timeStore map[string]time.Time
+	lock      sync.RWMutex
+	cond      *sync.Cond
 }
 
 var StreamStoreInstance = &StreamStore{
-	store: make(map[string][]map[string]string),
+	store:     make(map[string][]map[string]string),
+	timeStore: make(map[string]time.Time),
 }
 
 func init() {
@@ -61,9 +63,11 @@ func (s *StreamStore) ValidateAndAdd(key string, data map[string]string) (bool, 
 
 func (s *StreamStore) AddItem(key string, data map[string]string) string {
 
+	id := data["id"]
 	s.store[key] = append(s.store[key], data)
+	s.timeStore[id] = time.Now()
 
-	return data["id"]
+	return id
 
 }
 
@@ -234,7 +238,7 @@ func (s *StreamStore) SearchExclusiveWithoutBlock(items []*Pair[string, string])
 	return s.SearchExclusiveAll(items)
 }
 
-func (s *StreamStore) SearchExclusiveWithBlock(items []*Pair[string, string], timeOut int) []any {
+func (s *StreamStore) SearchExclusiveWithBlock(items []*Pair[string, string], timeOut int, isBlockedForNewKey bool, startTime time.Time) []any {
 
 	s.lock.RLock()
 	defer s.lock.RUnlock()
@@ -252,7 +256,12 @@ func (s *StreamStore) SearchExclusiveWithBlock(items []*Pair[string, string], ti
 	}()
 
 	for {
-		result := s.SearchExclusiveAll(items)
+		var result []any
+		if isBlockedForNewKey {
+			result = s.SearchExclusiveAllNew(items, startTime)
+		} else {
+			result = s.SearchExclusiveAll(items)
+		}
 
 		if len(result) > 0 {
 			return result
@@ -264,6 +273,21 @@ func (s *StreamStore) SearchExclusiveWithBlock(items []*Pair[string, string], ti
 
 		s.cond.Wait()
 	}
+
+}
+
+func (s *StreamStore) SearchExclusiveAllNew(items []*Pair[string, string], startTime time.Time) []any {
+	result := make([]any, 0)
+	for i := range items {
+		item := items[i]
+		key := item.GetK()
+		nested := s.SearchExclusiveNew(key, startTime)
+		if len(nested) > 0 {
+			result = append(result, []any{key, nested})
+		}
+	}
+
+	return result
 
 }
 
@@ -322,6 +346,30 @@ func (s *StreamStore) SearchExclusive(key, targetId string) []any {
 
 		l++
 	}
+	return result
+}
+
+func (s *StreamStore) SearchExclusiveNew(key string, timeStamp time.Time) []any {
+
+	result := make([]any, 0)
+	entries := s.store[key]
+	for i := range entries {
+		entryId := entries[i]["id"]
+		inSertionTime := s.timeStore[entryId]
+
+		if inSertionTime.After(timeStamp) {
+
+			data := make([]string, 0)
+			for k, v := range entries[i] {
+				if k == "id" {
+					continue
+				}
+				data = append(data, k, v)
+			}
+			result = append(result, []any{entryId, data})
+		}
+	}
+
 	return result
 }
 
