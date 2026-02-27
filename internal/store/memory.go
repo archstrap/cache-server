@@ -199,19 +199,41 @@ func (s *StreamStore) SearchInRange(key, start, end string) []any {
 	return result
 }
 
-func greaterOrEqualTo(a, b int64) bool {
-	return a >= b
+func greaterOrEqualTo(ats, bts int64, seq1, seq2 int) bool {
+
+	// ats -> currentId timeStamp
+	// bts -> start timeStamp
+	// seq1 -> currentId Seq
+	// seq2 -> start Seq
+
+	if ats > bts {
+		return true
+	}
+
+	return ats == bts && seq1 >= seq2
 }
 
-func lesserOrEqualTo(a, b int64) bool {
-	return a <= b
+func lesserOrEqualTo(ats, bts int64, seq1, seq2 int) bool {
+	// ats -> currentId timeStamp
+	// bts -> end timeStamp
+	// seq1 -> currentId Seq
+	// seq2 -> end Seq
+
+	if ats < bts {
+		return true
+	}
+
+	return ats == bts && seq1 <= seq2
+
 }
 
-func compare(a, b string, fn func(a, b int64) bool) bool {
+func compare(ats, bts string, fn func(ats, bts int64, seq1, seq2 int) bool) bool {
 
-	a, _, _ = strings.Cut(a, "-")
-	b, _, _ = strings.Cut(b, "-")
-	ts1, _ := strconv.ParseInt(a, 10, 64) // base 10 and 64 bit integer
-	ts2, _ := strconv.ParseInt(b, 10, 64)
-	return fn(ts1, ts2)
+	ats, aseq, _ := strings.Cut(ats, "-")
+	bts, bseq, _ := strings.Cut(bts, "-")
+	ts1, _ := strconv.ParseInt(ats, 10, 64) // base 10 and 64 bit integer
+	ts2, _ := strconv.ParseInt(bts, 10, 64)
+	seq1, _ := strconv.Atoi(aseq)
+	seq2, _ := strconv.Atoi(bseq)
+	return fn(ts1, ts2, seq1, seq2)
 }
