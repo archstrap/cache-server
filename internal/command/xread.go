@@ -2,6 +2,7 @@ package command
 
 import (
 	"slices"
+	"strings"
 
 	"github.com/archstrap/cache-server/internal/store"
 	"github.com/archstrap/cache-server/pkg/model"
@@ -23,7 +24,9 @@ func (x *XREAD) Process(input *model.RespValue) *model.RespOutput {
 
 	args := input.ArgsToStringSlice()
 	n := len(args)
-	streamIndex := slices.Index(args, "STREAMS")
+	streamIndex := slices.IndexFunc(args, func(s string) bool {
+		return strings.ToUpper(s) == "STREAMS"
+	})
 	remaining := (n - 1) - streamIndex
 	end := remaining / 2
 
