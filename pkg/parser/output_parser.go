@@ -52,6 +52,10 @@ func parseStringArrayOutput(data []string) string {
 func parseAnyArrayOutput(data []any) string {
 	var result strings.Builder
 
+	if data == nil {
+		return "*-1\r\n"
+	}
+
 	result.WriteString(fmt.Sprintf("*%d\r\n", len(data)))
 
 	for i := range data {

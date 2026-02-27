@@ -11,10 +11,35 @@ import (
 type StreamStore struct {
 	store map[string][]map[string]string
 	lock  sync.RWMutex
+	cond  *sync.Cond
 }
 
 var StreamStoreInstance = &StreamStore{
 	store: make(map[string][]map[string]string),
+}
+
+func init() {
+	StreamStoreInstance.cond = sync.NewCond(StreamStoreInstance.lock.RLocker())
+}
+
+type Pair[K, V any] struct {
+	k K
+	v V
+}
+
+func NewPair[K, V any](k K, v V) *Pair[K, V] {
+	return &Pair[K, V]{
+		k: k,
+		v: v,
+	}
+}
+
+func (p *Pair[K, V]) GetK() K {
+	return p.k
+}
+
+func (p *Pair[K, V]) GetV() V {
+	return p.v
 }
 
 func (s *StreamStore) ValidateAndAdd(key string, data map[string]string) (bool, string) {
@@ -29,7 +54,9 @@ func (s *StreamStore) ValidateAndAdd(key string, data map[string]string) (bool, 
 		return false, ""
 	}
 
-	return true, s.AddItem(key, data)
+	insertedId := s.AddItem(key, data)
+	s.cond.Broadcast()
+	return true, insertedId
 }
 
 func (s *StreamStore) AddItem(key string, data map[string]string) string {
@@ -199,10 +226,69 @@ func (s *StreamStore) SearchInRange(key, start, end string) []any {
 	return result
 }
 
+func (s *StreamStore) SearchExclusiveWithoutBlock(items []*Pair[string, string]) []any {
+
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
+	return s.SearchExclusiveAll(items)
+}
+
+func (s *StreamStore) SearchExclusiveWithBlock(items []*Pair[string, string], timeOut int) []any {
+
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
+	var deadline time.Time
+
+	if timeOut != 0 {
+		deadline = time.Now().Add(time.Duration(timeOut) * time.Millisecond)
+	}
+
+	// in case nothing gets received we will call up goroutine
+	go func() {
+		time.Sleep(time.Duration(timeOut) * time.Millisecond)
+		s.cond.Broadcast()
+	}()
+
+	for {
+		result := s.SearchExclusiveAll(items)
+
+		if len(result) > 0 {
+			return result
+		}
+
+		if timeOut != 0 && time.Now().After(deadline) {
+			return nil
+		}
+
+		s.cond.Wait()
+	}
+
+}
+
+func (s *StreamStore) SearchExclusiveAll(items []*Pair[string, string]) []any {
+
+	result := make([]any, 0)
+	for i := range items {
+		item := items[i]
+		key := item.GetK()
+		id := item.GetV()
+
+		nested := s.SearchExclusive(key, id)
+		if len(nested) > 0 {
+			result = append(result, []any{key, nested})
+		}
+	}
+
+	return result
+}
+
 func (s *StreamStore) SearchExclusive(key, targetId string) []any {
 
 	entries := s.store[key]
-	l := 0
+	n := len(entries)
+	l := n
 	for i := range len(entries) {
 		currentId := entries[i]["id"]
 		if compare(currentId, targetId, func(cts, tts int64, cseq, tseq int) bool {
