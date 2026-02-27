@@ -1,9 +1,11 @@
 package store
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 type StreamStore struct {
@@ -15,9 +17,22 @@ var StreamStoreInstance = &StreamStore{
 	store: make(map[string][]map[string]string),
 }
 
-func (s *StreamStore) AddItem(key string, data map[string]string) string {
+func (s *StreamStore) ValidateAndAdd(key string, data map[string]string) (bool, string) {
+
 	s.lock.Lock()
 	defer s.lock.Unlock()
+
+	data["id"] = s.generateId(data["id"], key)
+
+	isValid := s.IsValid(key, data)
+	if !isValid {
+		return false, ""
+	}
+
+	return true, s.AddItem(key, data)
+}
+
+func (s *StreamStore) AddItem(key string, data map[string]string) string {
 
 	s.store[key] = append(s.store[key], data)
 
@@ -37,9 +52,6 @@ func (s *StreamStore) containsKey(key string) bool {
 }
 
 func (s *StreamStore) IsValid(key string, data map[string]string) bool {
-
-	s.lock.Lock()
-	defer s.lock.Unlock()
 
 	if !s.containsKey(key) {
 		return true
@@ -67,7 +79,11 @@ func compareId(id1 string, id2 string) bool {
 		return false
 	}
 
-	return t1 <= t2 && s1 < s2
+	if t2 > t1 {
+		return true
+	}
+
+	return t1 == t2 && s1 < s2
 }
 
 func extractIdDetails(id string) (bool, int64, int) {
@@ -84,4 +100,45 @@ func extractIdDetails(id string) (bool, int64, int) {
 	}
 
 	return true, int64(timeStamp), sequenceNo
+}
+
+func (s *StreamStore) generateId(id string, key string) string {
+	if !strings.Contains(id, "*") {
+		return id
+	}
+
+	var timeStamp string
+	if "*" == id { // fully auto generated
+		timeStamp = fmt.Sprintf("%d", time.Now().Local().UnixMilli())
+	} else { // partially auto generated
+		timeStamp = strings.Split(id, "-")[0]
+	}
+
+	if !s.containsKey(key) {
+		id := fmt.Sprintf("%s-%d", timeStamp, 0)
+		if id == "0-0" {
+			return "0-1"
+		}
+		return id
+	}
+
+	entries := s.store[key]
+	lastEntry := entries[len(entries)-1]
+	lastEntryId := lastEntry["id"]
+	lastEntryArgs := strings.Split(lastEntryId, "-")
+	lastEntryTimeStamp := lastEntryArgs[0]
+
+	if timeStamp != lastEntryTimeStamp {
+		id := fmt.Sprintf("%s-%d", timeStamp, 0)
+		if id == "0-0" {
+			return "0-1"
+		}
+
+		return id
+	}
+
+	lastEntrySeqNo := lastEntryArgs[1]
+	seqNo, _ := strconv.Atoi(lastEntrySeqNo)
+
+	return fmt.Sprintf("%s-%d", timeStamp, (seqNo + 1))
 }

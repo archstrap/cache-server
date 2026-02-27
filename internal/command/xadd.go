@@ -40,11 +40,11 @@ func (x *XADD) Process(input *model.RespValue) *model.RespOutput {
 
 	storage := store.StreamStoreInstance
 
-	if !storage.IsValid(key, data) {
+	ok, insertedId := storage.ValidateAndAdd(key, data)
+
+	if !ok {
 		return model.NewRespOutput(model.TypeError, "ERR The ID specified in XADD is equal or smaller than the target stream top item")
 	}
-
-	insertedId := storage.AddItem(key, data)
 
 	return model.NewRespOutput(model.TypeBulkString, insertedId)
 }
