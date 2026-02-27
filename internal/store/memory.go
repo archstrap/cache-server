@@ -199,6 +199,46 @@ func (s *StreamStore) SearchInRange(key, start, end string) []any {
 	return result
 }
 
+func (s *StreamStore) SearchExclusive(key, targetId string) []any {
+
+	entries := s.store[key]
+	l := 0
+	for i := range len(entries) {
+		currentId := entries[i]["id"]
+		if compare(currentId, targetId, func(cts, tts int64, cseq, tseq int) bool {
+			return (cts > tts) || (cts == tts && cseq > tseq)
+		}) {
+			l = i
+			break
+		}
+	}
+
+	result := make([]any, 0)
+
+	for l < len(entries) {
+		entry := entries[l]
+		id := entry["id"]
+		other := make([]string, 0)
+
+		for k, v := range entry {
+			if k == "id" {
+				continue
+			}
+			other = append(other, k, v)
+		}
+
+		data := []any{
+			id,
+			other,
+		}
+
+		result = append(result, data)
+
+		l++
+	}
+	return result
+}
+
 func greaterOrEqualTo(ats, bts int64, seq1, seq2 int) bool {
 
 	// ats -> currentId timeStamp
