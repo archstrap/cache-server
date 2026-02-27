@@ -29,12 +29,22 @@ func (x *XADD) Process(input *model.RespValue) *model.RespOutput {
 		"id": args[2],
 	}
 
+	if data["id"] == "0-0" {
+		return model.NewRespOutput(model.TypeError, "ERR The ID specified in XADD must be greater than 0-0")
+	}
+
 	for i := 3; i < len(args); i += 2 {
 		k, v := args[i], args[i+1]
 		data[k] = v
 	}
 
-	insertedId := store.StreamStoreInstance.AddItem(key, data)
+	storage := store.StreamStoreInstance
+
+	if !storage.IsValid(key, data) {
+		return model.NewRespOutput(model.TypeError, "ERR The ID specified in XADD is equal or smaller than the target stream top item")
+	}
+
+	insertedId := storage.AddItem(key, data)
 
 	return model.NewRespOutput(model.TypeBulkString, insertedId)
 }
