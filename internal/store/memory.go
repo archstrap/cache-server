@@ -142,3 +142,76 @@ func (s *StreamStore) generateId(id string, key string) string {
 
 	return fmt.Sprintf("%s-%d", timeStamp, (seqNo + 1))
 }
+
+func (s *StreamStore) SearchInRange(key, start, end string) []any {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
+	entries := s.store[key]
+
+	l := 0
+	r := len(entries) - 1
+
+	if start != "-" {
+		for i := 0; i <= r; i++ {
+			currentId := entries[i]["id"]
+			if compare(currentId, start, greaterOrEqualTo) {
+				l = i
+				break
+			}
+		}
+	}
+
+	if end != "+" {
+		for i := r; i >= l; i-- {
+			currentId := entries[i]["id"]
+			if compare(currentId, end, lesserOrEqualTo) {
+				r = i
+				break
+			}
+		}
+	}
+
+	result := make([]any, 0)
+
+	for l <= r {
+		currentEntry := entries[l]
+		currentEntryId := currentEntry["id"]
+
+		items := make([]string, 0)
+		for k, v := range currentEntry {
+			if k == "id" {
+				continue
+			}
+			items = append(items, k, v)
+		}
+
+		currentResult := []any{
+			currentEntryId,
+			items,
+		}
+
+		result = append(result, currentResult)
+		l++
+
+	}
+
+	return result
+}
+
+func greaterOrEqualTo(a, b int64) bool {
+	return a >= b
+}
+
+func lesserOrEqualTo(a, b int64) bool {
+	return a <= b
+}
+
+func compare(a, b string, fn func(a, b int64) bool) bool {
+
+	a, _, _ = strings.Cut(a, "-")
+	b, _, _ = strings.Cut(b, "-")
+	ts1, _ := strconv.ParseInt(a, 10, 64) // base 10 and 64 bit integer
+	ts2, _ := strconv.ParseInt(b, 10, 64)
+	return fn(ts1, ts2)
+}

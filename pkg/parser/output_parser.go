@@ -27,10 +27,7 @@ func parseIntegerOutput(result *model.RespOutput) string {
 	return fmt.Sprintf("%s%d\r\n", string(result.RespType), data)
 }
 
-func parseArrayOutput(result *model.RespOutput) string {
-
-	data := result.Data.([]string)
-
+func parseStringArrayOutput(data []string) string {
 	if len(data) == 0 {
 		return "*0\r\n"
 	}
@@ -50,6 +47,39 @@ func parseArrayOutput(result *model.RespOutput) string {
 	}
 
 	return resultBuilder.String()
+}
+
+func parseAnyArrayOutput(data []any) string {
+	var result strings.Builder
+
+	result.WriteString(fmt.Sprintf("*%d\r\n", len(data)))
+
+	for i := range data {
+		switch innerData := data[i].(type) {
+		case string:
+			result.WriteString(parseBulkStringOutput(model.NewRespOutput(model.TypeBulkString, innerData)))
+		case int:
+			result.WriteString(parseIntegerOutput(model.NewRespOutput(model.TypeInteger, innerData)))
+		case []string:
+			result.WriteString(parseStringArrayOutput(innerData))
+		case []any:
+			result.WriteString(parseAnyArrayOutput(innerData)) // recursively
+		}
+	}
+
+	return result.String()
+}
+
+func parseArrayOutput(result *model.RespOutput) string {
+
+	switch data := result.Data.(type) {
+	case []string:
+		return parseStringArrayOutput(data)
+	case []any:
+		return parseAnyArrayOutput(data)
+	}
+
+	return "*0\r\n"
 }
 
 func parseSimpleStringOutput(data *model.RespOutput) string {
