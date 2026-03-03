@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
+	"github.com/archstrap/cache-server/internal/store"
 	"github.com/archstrap/cache-server/pkg/model"
 )
 
@@ -18,33 +18,12 @@ type SetCommand struct {
 	CommandName string
 }
 
-type CacheItem struct {
-	item      any
-	expiresAt time.Time
-	valueType model.ValueType
-}
-
-type Cache struct {
-	mu   sync.RWMutex
-	data map[string]CacheItem
-}
-
-var (
-	CacheStore *Cache = &Cache{
-		data: make(map[string]CacheItem),
-	}
-)
-
 var SetCommandInstance = &SetCommand{
 	CommandName: "SET",
 }
 
 var GetCommandInstance = &GetCommand{
 	CommandName: "GET",
-}
-
-func GetCacheStore() *Cache {
-	return CacheStore
 }
 
 var subCommands = map[string]bool{
@@ -69,14 +48,15 @@ func (command *GetCommand) Process(value *model.RespValue) *model.RespOutput {
 		return model.NewRespOutput(model.TypeError, "ERR wrong number of arguments for 'get' command")
 	}
 
-	CacheStore.mu.RLock()
-	defer CacheStore.mu.RUnlock()
+	cacheStore := store.GetCacheStore()
+	cacheStore.RLock()
+	defer cacheStore.RUnlock()
 
 	key := data[1]
-	cacheItem, ok := CacheStore.data[key]
-	val := cacheItem.item
-	if !ok || !cacheItem.expiresAt.IsZero() && time.Now().After(cacheItem.expiresAt) {
-		delete(CacheStore.data, key)
+	cacheItem, ok := cacheStore.Get(key)
+	val := cacheItem.Item()
+	if !ok || cacheItem.IsExpired() {
+
 		val = "-1"
 	}
 
@@ -119,13 +99,15 @@ func (command *SetCommand) Process(value *model.RespValue) *model.RespOutput {
 
 	}
 
-	CacheStore.mu.Lock()
-	defer CacheStore.mu.Unlock()
+	cacheStore := store.GetCacheStore()
+	cacheStore.Lock()
+	defer cacheStore.Unlock()
 
 	key := data[1]
 	val := data[2]
 	valueType := model.ValueTypeString
-	CacheStore.data[key] = CacheItem{item: val, expiresAt: expiresAt, valueType: valueType}
+
+	cacheStore.Add(key, store.NewCacheItem(val, expiresAt, valueType))
 
 	return model.NewRespOutput(model.TypeSimpleString, "OK")
 }

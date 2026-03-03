@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/archstrap/cache-server/internal/store"
 	"github.com/archstrap/cache-server/pkg/model"
 	"github.com/archstrap/cache-server/util"
 )
@@ -21,22 +22,22 @@ func (k *KeyCommand) Process(input *model.RespValue) *model.RespOutput {
 	}
 
 	pattern := args[1]
-	store := GetCacheStore()
+	cacheStore := store.GetCacheStore()
 	keys := make([]string, 0)
 
 	cleanableKeys := make([]string, 0)
 
-	for k := range store.data {
+	for k := range cacheStore.GetData() {
 		matched, err := util.MatchString(pattern, k)
 		if err != nil {
 			continue
 		}
 
 		if matched {
-			v := store.data[k]
+			v, _ := cacheStore.Get(k)
 			now := time.Now()
 			// delete the key if expires
-			if !v.expiresAt.IsZero() && now.After(v.expiresAt) {
+			if v.IsExpiredNow(now) {
 				cleanableKeys = append(cleanableKeys, k)
 				continue
 			}
@@ -56,9 +57,10 @@ func (k *KeyCommand) Name() string {
 }
 
 func cleanup(cleanableKeys *[]string) {
-	store := GetCacheStore()
+	store := store.GetCacheStore()
 	for i := range *cleanableKeys {
-		delete(store.data, (*cleanableKeys)[i])
+		key := (*cleanableKeys)[i]
+		store.Delete(key)
 	}
 	slog.Info("Delete expired keys ", "count", len(*cleanableKeys))
 }

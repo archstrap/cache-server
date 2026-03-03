@@ -1,8 +1,6 @@
 package command
 
 import (
-	"time"
-
 	"github.com/archstrap/cache-server/internal/store"
 	"github.com/archstrap/cache-server/pkg/model"
 )
@@ -22,17 +20,18 @@ func (t *TypeCommand) Process(input *model.RespValue) *model.RespOutput {
 		return model.NewWrongNumberOfOutput(t.Name())
 	}
 
-	CacheStore.mu.Lock()
-	defer CacheStore.mu.Unlock()
+	cacheStore := store.GetCacheStore()
+	cacheStore.Lock()
+	defer cacheStore.Unlock()
 
 	key := args[1]
-	val, ok := CacheStore.data[key]
+	val, ok := cacheStore.Get(key)
 	resultType := "none"
 	if ok {
-		if !val.expiresAt.IsZero() && time.Now().After(val.expiresAt) {
-			delete(CacheStore.data, key)
+		if val.IsExpired() {
+			cacheStore.Delete(key)
 		} else {
-			resultType = string(val.valueType)
+			resultType = string(val.ValueType())
 		}
 	}
 
