@@ -97,6 +97,10 @@ func (cR *HandlerFactory) ProcessCommand(conn net.Conn, input *model.RespValue) 
 	// process the output
 	respOutput := iCommand.Process(input)
 
+	if command == "MULTI" {
+		shared.SMultiTransaction.Add(conn)
+	}
+
 	MonitorReplicaConnectionIfPossible(conn, input)
 	AddPropagationIfPossible(input, respOutput)
 

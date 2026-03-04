@@ -41,7 +41,7 @@ func (command *SetCommand) Name() string {
 
 func (command *GetCommand) Process(value *model.RespValue) *model.RespOutput {
 
-	data := value.Value.([]string)
+	data := value.ArgsToStringSlice()
 
 	// GET K
 	if len(data) != 2 {
@@ -54,10 +54,18 @@ func (command *GetCommand) Process(value *model.RespValue) *model.RespOutput {
 
 	key := data[1]
 	cacheItem, ok := cacheStore.Get(key)
-	val := cacheItem.Item()
-	if !ok || cacheItem.IsExpired() {
 
+	// case-1: key is not present
+	if !ok {
+		return model.NewRespOutput(model.TypeBulkString, "-1")
+	}
+
+	// case-2: Key is present
+	val := cacheItem.Item()
+	// case-2(b): but key is expired
+	if cacheItem.IsExpired() {
 		val = "-1"
+		cacheStore.Delete(key)
 	}
 
 	return model.NewRespOutput(model.TypeBulkString, val)
