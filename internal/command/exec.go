@@ -17,8 +17,16 @@ func init() {
 
 func (c *Exec) Execute(conn net.Conn, input *model.RespValue) *model.RespOutput {
 
-	if !shared.GetMultiTransactionStore().IsTransactionInitialized(conn) {
+	mts := shared.GetMultiTransactionStore()
+
+	if !mts.IsTransactionInitialized(conn) {
 		return model.NewRespOutput(model.TypeError, "ERR EXEC without MULTI")
+	}
+
+	defer mts.Remove(conn)
+
+	if !mts.AreQueuedCommandsAvailable(conn) {
+		return model.NewRespOutput(model.TypeArray, []string{})
 	}
 
 	return nil

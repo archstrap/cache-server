@@ -17,6 +17,10 @@ type Transaction struct {
 	isClosed      bool
 }
 
+func (t *Transaction) IsEmpty() bool {
+	return len(t.commands) == 0
+}
+
 func NewTransaction() *Transaction {
 	return &Transaction{
 		commands:      make(chan *model.RespValue, 25),
@@ -44,4 +48,17 @@ func (c *MultiTransaction) Add(conn net.Conn) {
 func (c *MultiTransaction) IsTransactionInitialized(conn net.Conn) bool {
 	_, ok := c.details[conn]
 	return ok
+}
+
+func (c *MultiTransaction) AreQueuedCommandsAvailable(conn net.Conn) bool {
+	transactionDetails, ok := c.details[conn]
+	if !ok {
+		slog.Info("Unable to get")
+		return false
+	}
+	return !transactionDetails.IsEmpty()
+}
+
+func (c *MultiTransaction) Remove(conn net.Conn) {
+	delete(c.details, conn)
 }
