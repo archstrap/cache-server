@@ -29,7 +29,19 @@ var SMultiTransaction = &MultiTransaction{
 	details: make(map[net.Conn]*Transaction),
 }
 
+func GetMultiTransactionStore() *MultiTransaction {
+	return SMultiTransaction
+}
+
 func (c *MultiTransaction) Add(conn net.Conn) {
+	if c.IsTransactionInitialized(conn) {
+		return
+	}
 	c.details[conn] = NewTransaction()
-	slog.Info("added connection ", slog.Any("details", conn.RemoteAddr()))
+	slog.Info("Connection gets added in Multi session transactions", slog.Any("details", conn.RemoteAddr()))
+}
+
+func (c *MultiTransaction) IsTransactionInitialized(conn net.Conn) bool {
+	_, ok := c.details[conn]
+	return ok
 }

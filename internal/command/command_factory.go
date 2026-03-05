@@ -4,7 +4,6 @@ import (
 	"log/slog"
 	"net"
 	"strings"
-	"sync"
 
 	"github.com/archstrap/cache-server/internal/config"
 	"github.com/archstrap/cache-server/internal/replication"
@@ -16,6 +15,10 @@ import (
 
 type HandlerFactory struct {
 	handlers map[string]ICommand
+}
+
+type SpecialRegistry struct {
+	commands map[string]SCommand
 }
 
 func NewCommandHandlerFactory() *HandlerFactory {
@@ -30,9 +33,12 @@ func NewCommandHandlerFactory() *HandlerFactory {
 
 var (
 	Registry           *HandlerFactory
-	mu                 sync.Mutex
 	modifiableCommands map[string]bool = map[string]bool{
-		"SET": true,
+		"SET":  true,
+		"INCR": true,
+	}
+	SRegistry *SpecialRegistry = &SpecialRegistry{
+		commands: make(map[string]SCommand),
 	}
 )
 
@@ -41,15 +47,11 @@ func init() {
 }
 
 func GetCommandHandlerFactory() *HandlerFactory {
-
-	if Registry == nil {
-		mu.Lock()
-		defer mu.Unlock()
-		if Registry == nil {
-			Registry = NewCommandHandlerFactory()
-		}
-	}
 	return Registry
+}
+
+func GetSpecialRegistry() *SpecialRegistry {
+	return SRegistry
 }
 
 func (cR *HandlerFactory) RegisterCommand(command ICommand) {
@@ -91,15 +93,11 @@ func getOrDefault(mp map[string]ICommand, key string, defaultValue ICommand) ICo
 func (cR *HandlerFactory) ProcessCommand(conn net.Conn, input *model.RespValue) string {
 	command := strings.ToUpper(strings.TrimSpace(input.Command))
 
-	slog.Info("Start Processing ", slog.Any("command", input.Command))
+	slog.Info("Start Processing ", slog.Any("command", command))
 
 	iCommand := getOrDefault(cR.handlers, command, &UnknownCommand{CommandName: "UNKNOWN"})
 	// process the output
 	respOutput := iCommand.Process(input)
-
-	if command == "MULTI" {
-		shared.SMultiTransaction.Add(conn)
-	}
 
 	MonitorReplicaConnectionIfPossible(conn, input)
 	AddPropagationIfPossible(input, respOutput)
@@ -150,4 +148,19 @@ func AddPropagationIfPossible(input *model.RespValue, output *model.RespOutput) 
 	go replication.GetReplicationStore().Propagate(input)
 	// it is a write command so we can increment the master offset
 	replication.GetServerState().IncrementMasterState(util.GetBytes(input))
+}
+
+func (s *SpecialRegistry) Contains(command string) bool {
+	command = strings.ToUpper(strings.TrimSpace(command))
+	_, ok := s.commands[command]
+	return ok
+}
+
+func (s *SpecialRegistry) Process(conn net.Conn, input *model.RespValue) string {
+
+	command := strings.ToUpper(strings.TrimSpace(input.Command))
+	slog.Any("Start Processing special", slog.Any("command", command))
+	executableCommand := s.commands[command]
+	result := executableCommand.Execute(conn, input)
+	return parser.ParseOutput(result)
 }

@@ -11,6 +11,8 @@ import (
 	"github.com/archstrap/cache-server/internal/command"
 	"github.com/archstrap/cache-server/internal/rdb"
 	"github.com/archstrap/cache-server/internal/replication"
+	"github.com/archstrap/cache-server/internal/shared"
+	"github.com/archstrap/cache-server/pkg/model"
 	parserLib "github.com/archstrap/cache-server/pkg/parser"
 	"github.com/archstrap/cache-server/util"
 )
@@ -20,41 +22,54 @@ type RedisTask struct {
 	Context    context.Context
 }
 
-func (conn *RedisTask) exec() {
+func (task *RedisTask) exec() {
 
-	connection := conn.Connection
-	parser := parserLib.NewRespParser(connection)
+	conn := task.Connection
+	parser := parserLib.NewRespParser(conn)
 
 	for {
 		select {
-		case <-conn.Context.Done():
+		case <-task.Context.Done():
 			slog.Info("Shutdown server")
 			return
 
 		default:
-			data, err := parser.Parse()
+			input, err := parser.Parse()
 			if err != nil {
 				if err == io.EOF {
-					slog.Info("Client disconnected", "address", connection.RemoteAddr())
+					slog.Info("Client disconnected", "address", conn.RemoteAddr())
 					return
 				}
 				slog.Error("Error occurred", "error", err)
 				os.Exit(1)
 			}
 
-			factory := command.GetCommandHandlerFactory()
-			output := factory.ProcessCommand(connection, data)
+			var output string
+			if !IsCommand("EXEC", input) && shared.GetMultiTransactionStore().IsTransactionInitialized(conn) {
+				output = parserLib.ParseOutput(model.NewRespOutput(model.TypeBulkString, "QUEUED"))
+			} else if sr := command.GetSpecialRegistry(); sr.Contains(input.Command) {
+				output = sr.Process(conn, input)
+				slog.Info("SPECIAL", slog.Any("OUTPUT", output))
+			} else {
+				output = command.GetCommandHandlerFactory().ProcessCommand(conn, input)
+				slog.Info("NORMAL", slog.Any("OUTPUT", output))
+			}
+
+			if IsCommand("MULTI", input) {
+				shared.GetMultiTransactionStore().Add(conn)
+			}
+
 			// for ACK subcommand we don't have to respond
-			if util.IsInputAck(data) {
+			if util.IsInputAck(input) {
 				continue
 			}
-			_, err = connection.Write([]byte(output))
+			_, err = conn.Write([]byte(output))
 
 			if err != nil {
 				slog.Error("Error while sending outputs .", slog.Any("details", err))
 				break
 			}
-			sendExtraPayloadIfPossible(connection, output)
+			sendExtraPayloadIfPossible(conn, output)
 		}
 
 	}
@@ -76,4 +91,8 @@ func sendExtraPayloadIfPossible(conn net.Conn, output string) {
 		}
 	}
 
+}
+
+func IsCommand(expectedName string, input *model.RespValue) bool {
+	return expectedName == strings.ToUpper(strings.TrimSpace(input.Command))
 }
