@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/archstrap/cache-server/pkg/model"
@@ -28,21 +29,32 @@ func parseIntegerOutput(result *model.RespOutput) string {
 }
 
 func parseStringArrayOutput(data []string) string {
-	if len(data) == 0 {
+
+	length := len(data)
+
+	if length == 0 {
 		return "*0\r\n"
 	}
 
 	var resultBuilder strings.Builder
-	length := len(data)
 
-	if data[0] == "COMMAND" {
+	if "COMMAND" == data[0] {
 		return "+OK\r\n"
 	}
 
 	resultBuilder.WriteString(fmt.Sprintf("%s%d\r\n", string(model.TypeArray), length))
 
-	for _, element := range data {
-		child := fmt.Sprintf("%s%d\r\n%s\r\n", string(model.TypeBulkString), len(element), element)
+	types := []model.RespType{model.TypeSimpleString, model.TypeInteger, model.TypeBulkString, model.TypeError}
+
+	for i := range data {
+		element := data[i]
+		var child string
+		typeOfInput := model.RespType(element[0])
+		if slices.Contains(types, typeOfInput) && strings.HasSuffix(element, "\r\n") {
+			child = fmt.Sprintf(element)
+		} else {
+			child = fmt.Sprintf("%s%d\r\n%s\r\n", string(model.TypeBulkString), len(element), element)
+		}
 		resultBuilder.WriteString(child)
 	}
 

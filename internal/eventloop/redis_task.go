@@ -46,6 +46,7 @@ func (task *RedisTask) exec() {
 
 			var output string
 			if !IsCommand("EXEC", input) && shared.GetMultiTransactionStore().IsTransactionInitialized(conn) {
+				shared.GetMultiTransactionStore().AddCommand(conn, input)
 				output = parserLib.ParseOutput(model.NewRespOutput(model.TypeSimpleString, "QUEUED"))
 			} else if sr := command.GetSpecialRegistry(); sr.Contains(input.Command) {
 				output = sr.Process(conn, input)

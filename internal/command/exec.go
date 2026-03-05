@@ -29,5 +29,13 @@ func (c *Exec) Execute(conn net.Conn, input *model.RespValue) *model.RespOutput 
 		return model.NewRespOutput(model.TypeArray, []string{})
 	}
 
-	return nil
+	var results []string
+	commands := mts.GetCommands(conn)
+	for i := range commands {
+		commandInput := commands[i]
+		result := GetCommandHandlerFactory().ProcessCommand(conn, commandInput)
+		results = append(results, result)
+	}
+
+	return model.NewRespOutput(model.TypeArray, results)
 }

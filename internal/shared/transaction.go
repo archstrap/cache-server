@@ -12,7 +12,7 @@ type MultiTransaction struct {
 }
 
 type Transaction struct {
-	commands      chan *model.RespValue
+	commands      []*model.RespValue
 	isInitialized bool
 	isClosed      bool
 }
@@ -21,9 +21,13 @@ func (t *Transaction) IsEmpty() bool {
 	return len(t.commands) == 0
 }
 
+func (t *Transaction) AddCommand(input *model.RespValue) {
+	t.commands = append(t.commands, input)
+}
+
 func NewTransaction() *Transaction {
 	return &Transaction{
-		commands:      make(chan *model.RespValue, 25),
+		commands:      make([]*model.RespValue, 0),
 		isInitialized: true,
 		isClosed:      false,
 	}
@@ -61,4 +65,12 @@ func (c *MultiTransaction) AreQueuedCommandsAvailable(conn net.Conn) bool {
 
 func (c *MultiTransaction) Remove(conn net.Conn) {
 	delete(c.details, conn)
+}
+
+func (c *MultiTransaction) AddCommand(conn net.Conn, input *model.RespValue) {
+	c.details[conn].AddCommand(input)
+}
+
+func (c *MultiTransaction) GetCommands(conn net.Conn) []*model.RespValue {
+	return c.details[conn].commands
 }
