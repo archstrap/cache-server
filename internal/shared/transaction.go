@@ -25,6 +25,10 @@ func (t *Transaction) AddCommand(input *model.RespValue) {
 	t.commands = append(t.commands, input)
 }
 
+func (t *Transaction) ClearCommands() {
+	t.commands = t.commands[:0]
+}
+
 func NewTransaction() *Transaction {
 	return &Transaction{
 		commands:      make([]*model.RespValue, 0),
@@ -65,6 +69,7 @@ func (c *MultiTransaction) AreQueuedCommandsAvailable(conn net.Conn) bool {
 
 func (c *MultiTransaction) Remove(conn net.Conn) {
 	delete(c.details, conn)
+	slog.Info("Connection gets removed in Multi session transactions", slog.Any("details", conn.RemoteAddr()))
 }
 
 func (c *MultiTransaction) AddCommand(conn net.Conn, input *model.RespValue) {
@@ -73,4 +78,9 @@ func (c *MultiTransaction) AddCommand(conn net.Conn, input *model.RespValue) {
 
 func (c *MultiTransaction) GetCommands(conn net.Conn) []*model.RespValue {
 	return c.details[conn].commands
+}
+
+func (c *MultiTransaction) Discard(conn net.Conn) {
+	txnDetails := c.details[conn]
+	txnDetails.ClearCommands()
 }

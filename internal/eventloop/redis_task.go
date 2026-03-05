@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/archstrap/cache-server/internal/command"
@@ -45,7 +46,7 @@ func (task *RedisTask) exec() {
 			}
 
 			var output string
-			if !IsCommand("EXEC", input) && shared.GetMultiTransactionStore().IsTransactionInitialized(conn) {
+			if !IsCommand(input, "EXEC", "DISCARD") && shared.GetMultiTransactionStore().IsTransactionInitialized(conn) {
 				shared.GetMultiTransactionStore().AddCommand(conn, input)
 				output = parserLib.ParseOutput(model.NewRespOutput(model.TypeSimpleString, "QUEUED"))
 			} else if sr := command.GetSpecialRegistry(); sr.Contains(input.Command) {
@@ -56,7 +57,7 @@ func (task *RedisTask) exec() {
 				slog.Info("NORMAL", slog.Any("OUTPUT", output))
 			}
 
-			if IsCommand("MULTI", input) {
+			if IsCommand(input, "MULTI") {
 				shared.GetMultiTransactionStore().Add(conn)
 			}
 
@@ -94,6 +95,7 @@ func sendExtraPayloadIfPossible(conn net.Conn, output string) {
 
 }
 
-func IsCommand(expectedName string, input *model.RespValue) bool {
-	return expectedName == strings.ToUpper(strings.TrimSpace(input.Command))
+func IsCommand(input *model.RespValue, expectedNames ...string) bool {
+	actualCommandName := strings.ToUpper(strings.TrimSpace(input.Command))
+	return slices.Contains(expectedNames, actualCommandName)
 }
