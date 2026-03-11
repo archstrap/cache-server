@@ -1,8 +1,6 @@
 // Package store provieds CRUD with list operations
 package store
 
-import "log/slog"
-
 type List struct {
 	items []string
 }
@@ -68,18 +66,13 @@ func (c *Container) Get(key string, start, end int) []string {
 	}
 
 	size := c.Len(key)
-	slog.Info("Array",
-		slog.Any("size", size),
-		slog.Any("start", start),
-		slog.Any("end", end),
-	)
 	if end < 0 {
 		end = size - (-1 * end)
 	}
 	if start < 0 {
 		start = size - (-1 * start)
 	}
-	for i := start; i <= min(size-1, end); i++ {
+	for i := max(0, start); i <= min(size-1, end); i++ {
 		result = append(result, list.items[i])
 	}
 
