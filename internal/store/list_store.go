@@ -15,6 +15,10 @@ func (l *List) Append(item string) {
 	l.items = append(l.items, item)
 }
 
+func (l *List) Prepend(item string) {
+	l.items = append([]string{item}, l.items...)
+}
+
 func (l *List) Len() int {
 	return len(l.items)
 }
@@ -49,10 +53,17 @@ func (c *Container) Append(key string, items ...string) int {
 	return list.Len()
 }
 
-func (c *Container) Len(key string) int {
+func (c *Container) Prepend(key string, items ...string) int {
 	list, ok := c.bucket[key]
+
 	if !ok {
-		return 0
+		list = c.InitList(key)
+	}
+
+	n := len(items)
+
+	for i := n - 1; i >= 0; i-- {
+		list.Prepend(items[i])
 	}
 
 	return list.Len()
@@ -65,7 +76,7 @@ func (c *Container) Get(key string, start, end int) []string {
 		return result
 	}
 
-	size := c.Len(key)
+	size := list.Len()
 	if end < 0 {
 		end = size - (-1 * end)
 	}
@@ -77,4 +88,13 @@ func (c *Container) Get(key string, start, end int) []string {
 	}
 
 	return result
+}
+
+func (c *Container) GetLen(key string) int {
+	list, ok := c.bucket[key]
+	if !ok {
+		return 0
+	}
+
+	return list.Len()
 }
