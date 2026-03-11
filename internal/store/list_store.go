@@ -60,9 +60,7 @@ func (c *Container) Prepend(key string, items ...string) int {
 		list = c.InitList(key)
 	}
 
-	n := len(items)
-
-	for i := n - 1; i >= 0; i-- {
+	for i := range items {
 		list.Prepend(items[i])
 	}
 
