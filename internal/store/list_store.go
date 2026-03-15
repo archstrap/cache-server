@@ -1,6 +1,11 @@
 // Package store provieds CRUD with list operations
 package store
 
+import (
+	"sync"
+	"time"
+)
+
 type List struct {
 	items []string
 }
@@ -25,10 +30,16 @@ func (l *List) Len() int {
 
 type Container struct {
 	bucket map[string]*List
+	lock   sync.RWMutex
+	cond   *sync.Cond
 }
 
 var cContainer = &Container{
 	bucket: make(map[string]*List),
+}
+
+func init() {
+	cContainer.cond = sync.NewCond(&cContainer.lock)
 }
 
 func GetContainer() *Container {
@@ -41,6 +52,9 @@ func (c *Container) InitList(key string) *List {
 }
 
 func (c *Container) Append(key string, items ...string) int {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
 	list, ok := c.bucket[key]
 
 	if !ok {
@@ -50,10 +64,14 @@ func (c *Container) Append(key string, items ...string) int {
 		list.Append(items[i])
 	}
 
+	c.cond.Broadcast()
 	return list.Len()
 }
 
 func (c *Container) Prepend(key string, items ...string) int {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
 	list, ok := c.bucket[key]
 
 	if !ok {
@@ -113,4 +131,34 @@ func (c *Container) Delete(key string, count int) []string {
 	deleteCount := len(deletedItems)
 	list.items = list.items[deleteCount:]
 	return deletedItems
+}
+
+func (c *Container) BlockDelete(key string, timeOut int) []string {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	var deadLine time.Time
+
+	if timeOut != 0 {
+		duration := time.Duration(timeOut) * time.Second
+		deadLine = time.Now().Add(duration)
+		go func() {
+			time.Sleep(duration)
+			c.cond.Broadcast()
+		}()
+	}
+
+	for {
+		deletedItems := c.Delete(key, 1)
+
+		if len(deletedItems) > 0 {
+			return append([]string{key}, deletedItems...)
+		}
+
+		if timeOut != 0 && time.Now().After(deadLine) {
+			return nil
+		}
+
+		c.cond.Wait()
+	}
 }
