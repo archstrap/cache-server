@@ -96,3 +96,21 @@ func (c *Container) GetLen(key string) int {
 
 	return list.Len()
 }
+
+func (c *Container) Delete(key string, count int) []string {
+	length := c.GetLen(key)
+
+	if length == 0 {
+		return []string{}
+	}
+
+	list := c.bucket[key]
+	deletedItems := make([]string, 0)
+	for i := 0; i < min(length, count); i++ {
+		deletedItems = append(deletedItems, list.items[i])
+	}
+
+	deleteCount := len(deletedItems)
+	list.items = list.items[deleteCount:]
+	return deletedItems
+}
