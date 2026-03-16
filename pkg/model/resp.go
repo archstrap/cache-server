@@ -45,12 +45,21 @@ func (r *RespValue) ToRespOutput() *RespOutput {
 type RespOutput struct {
 	RespType RespType
 	Data     any
+	MetaData string
 }
 
 func NewRespOutput(respType RespType, data any) *RespOutput {
 	return &RespOutput{
 		RespType: respType,
 		Data:     data,
+	}
+}
+
+func NewRespOutputWith(respType RespType, metaData string, data any) *RespOutput {
+	return &RespOutput{
+		RespType: respType,
+		Data:     data,
+		MetaData: metaData,
 	}
 }
 

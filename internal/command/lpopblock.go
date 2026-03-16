@@ -32,5 +32,9 @@ func (c *Blpop) Process(input *model.RespValue) *model.RespOutput {
 
 	result := store.GetContainer().BlockDelete(key, timeOut)
 
+	if len(result) == 0 {
+		return model.NewRespOutputWith(model.TypeArray, "NIL", result)
+	}
+
 	return model.NewRespOutput(model.TypeArray, result)
 }

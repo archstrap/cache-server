@@ -29,7 +29,6 @@ func parseIntegerOutput(result *model.RespOutput) string {
 }
 
 func parseStringArrayOutput(data []string) string {
-
 	length := len(data)
 
 	if length == 0 {
@@ -87,6 +86,9 @@ func parseAnyArrayOutput(data []any) string {
 }
 
 func parseArrayOutput(result *model.RespOutput) string {
+	if result.MetaData == "NIL" {
+		return "*-1\r\n"
+	}
 
 	switch data := result.Data.(type) {
 	case []string:

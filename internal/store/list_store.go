@@ -115,6 +115,12 @@ func (c *Container) GetLen(key string) int {
 	return list.Len()
 }
 
+func (c *Container) DeleteWithLock(key string, count int) []string {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	return c.Delete(key, count)
+}
+
 func (c *Container) Delete(key string, count int) []string {
 	length := c.GetLen(key)
 
