@@ -140,7 +140,7 @@ func (c *Container) BlockDelete(key string, timeOut int) []string {
 	var deadLine time.Time
 
 	if timeOut != 0 {
-		duration := time.Duration(timeOut) * time.Second
+		duration := time.Duration(timeOut) * time.Millisecond
 		deadLine = time.Now().Add(duration)
 		go func() {
 			time.Sleep(duration)

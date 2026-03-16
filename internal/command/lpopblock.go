@@ -26,7 +26,10 @@ func (c *Blpop) Process(input *model.RespValue) *model.RespOutput {
 	}
 
 	key := args[1]
-	timeOut, _ := strconv.Atoi(args[2])
+	timeOutInSec, _ := strconv.ParseFloat(args[2], 64)
+
+	timeOut := int(timeOutInSec * 1000)
+
 	result := store.GetContainer().BlockDelete(key, timeOut)
 
 	return model.NewRespOutput(model.TypeArray, result)
