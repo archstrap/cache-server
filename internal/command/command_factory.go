@@ -1,6 +1,7 @@
 package command
 
 import (
+	"fmt"
 	"log/slog"
 	"net"
 	"strings"
@@ -96,6 +97,11 @@ func (cR *HandlerFactory) ProcessCommand(conn net.Conn, input *model.RespValue) 
 	slog.Info("Start Processing ", slog.Any("command", command))
 
 	iCommand := getOrDefault(cR.handlers, command, &UnknownCommand{CommandName: "UNKNOWN"})
+
+	if command != "PING" && command != "QUIT" && command != "RESET" && shared.GetChannelStore().IsSubscribed(conn) {
+		return parser.ParseOutput(model.NewRespOutput(model.TypeError, fmt.Sprintf("ERR Can't execute '%s': only (P|S)SUBSCRIBE / (P|S)UNSUBSCRIBE / PING / QUIT / RESET are allowed in this context ", input.Command)))
+	}
+
 	// process the output
 	respOutput := iCommand.Process(input)
 

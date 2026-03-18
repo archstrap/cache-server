@@ -39,6 +39,7 @@ func (task *RedisTask) exec() {
 			if err != nil {
 				if err == io.EOF {
 					slog.Info("Client disconnected", "address", conn.RemoteAddr())
+					shared.GetChannelStore().Remove(conn)
 					return
 				}
 				slog.Error("Error occurred", "error", err)
