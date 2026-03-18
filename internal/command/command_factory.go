@@ -64,7 +64,6 @@ func (cR *HandlerFactory) registerAllCommands() {
 	var commandHandlers []ICommand
 
 	commandHandlers = append(commandHandlers, &EchoCommand{CommandName: "ECHO"})
-	commandHandlers = append(commandHandlers, &PingCommand{CommandName: "PING"})
 	commandHandlers = append(commandHandlers, &ConnectCommand{CommandName: "COMMAND"})
 	commandHandlers = append(commandHandlers, GetCommandInstance)
 	commandHandlers = append(commandHandlers, SetCommandInstance)
@@ -98,7 +97,7 @@ func (cR *HandlerFactory) ProcessCommand(conn net.Conn, input *model.RespValue) 
 
 	iCommand := getOrDefault(cR.handlers, command, &UnknownCommand{CommandName: "UNKNOWN"})
 
-	if command != "PING" && command != "QUIT" && command != "RESET" && shared.GetChannelStore().IsSubscribed(conn) {
+	if command != "QUIT" && command != "RESET" && shared.GetChannelStore().IsSubscribed(conn) {
 		return parser.ParseOutput(model.NewRespOutput(model.TypeError, fmt.Sprintf("ERR Can't execute '%s': only (P|S)SUBSCRIBE / (P|S)UNSUBSCRIBE / PING / QUIT / RESET are allowed in this context ", input.Command)))
 	}
 
