@@ -1,6 +1,7 @@
 package store
 
 import (
+	"fmt"
 	"log/slog"
 	"math"
 	"math/rand"
@@ -125,7 +126,9 @@ func (sl *SkipList) Insert(member string, score float64) int {
 		update[i].span[i]++
 	}
 
-	sl.size++
+	if sl.index[member] == nil {
+		sl.size++
+	}
 	sl.index[member] = newNode
 
 	return insertedItems
@@ -190,7 +193,16 @@ func (sl *SkipList) Range(start, end int) []any { // O(log(N) + K )
 	return result
 }
 
-func (sl *SkipList) Size() int {
+func (sl *SkipList) Score(member string) string {
+	node, ok := sl.index[member]
+	if !ok {
+		return "-1"
+	}
+
+	return fmt.Sprintf("%f", node.score)
+}
+
+func (sl *SkipList) Size() int { // O(1)
 	return sl.size
 }
 
@@ -247,6 +259,15 @@ func (b *SkipListBucket) Count(key string) int {
 
 	skipList := b.bucket[key]
 	return skipList.Size()
+}
+
+func (b *SkipListBucket) Score(key, member string) string {
+	if b.bucket[key] == nil {
+		return "-1"
+	}
+
+	skipList := b.bucket[key]
+	return skipList.Score(member)
 }
 
 type SetItem struct {
