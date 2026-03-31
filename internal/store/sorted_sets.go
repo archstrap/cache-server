@@ -108,7 +108,7 @@ func (sl *SkipList) Insert(member string, score float64) int {
 		sl.level = newLevel
 	}
 
-	newNode := NewSkipNode(member, score, MaxLevel+1)
+	newNode := NewSkipNode(member, score, newLevel+1)
 
 	for i := 0; i <= newLevel; i++ {
 		// change the pointer
@@ -129,6 +129,41 @@ func (sl *SkipList) Insert(member string, score float64) int {
 	sl.index[member] = newNode
 
 	return insertedItems
+}
+
+func (sl *SkipList) Rank(member string) int {
+
+	targetNode, ok := sl.index[member]
+	if !ok {
+		return -1
+	}
+
+	update := make([]*SkipNode, MaxLevel+1)
+	rank := make([]int, MaxLevel+1)
+	cur := sl.head
+	level := MaxLevel + 1
+
+	for i := sl.level; i >= 0; i-- {
+
+		if i == sl.level {
+			rank[i] = 0
+		} else {
+			rank[i] = rank[i+1]
+		}
+		for cur.next[i] != nil && cmp(cur.next[i].member, targetNode.member, cur.next[i].score, targetNode.score) < 0 {
+			rank[i] += cur.span[i]
+			cur = cur.next[i]
+		}
+		if cur.next[i] != nil && cmp(cur.next[i].member, targetNode.member, cur.next[i].score, targetNode.score) == 0 {
+			rank[i] += cur.span[i]
+			level = i
+			break
+		}
+		update[i] = cur
+	}
+
+	return rank[level] - 1
+
 }
 
 type SkipListBucket struct {
@@ -157,6 +192,15 @@ func (b *SkipListBucket) Insert(set *SetItem) int {
 	insertedItems := skipList.Insert(set.member, set.score)
 	return insertedItems
 
+}
+
+func (b *SkipListBucket) Rank(key, member string) int {
+	if b.bucket[key] == nil {
+		return -1
+	}
+
+	skipList := b.bucket[key]
+	return skipList.Rank(member)
 }
 
 type SetItem struct {
