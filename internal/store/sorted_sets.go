@@ -131,7 +131,7 @@ func (sl *SkipList) Insert(member string, score float64) int {
 	return insertedItems
 }
 
-func (sl *SkipList) Rank(member string) int {
+func (sl *SkipList) Rank(member string) int { // O(log(N))
 
 	targetNode, ok := sl.index[member]
 	if !ok {
@@ -155,6 +155,39 @@ func (sl *SkipList) Rank(member string) int {
 
 	return rank - 1
 
+}
+
+func (sl *SkipList) Range(start, end int) []any { // O(log(N) + K )
+	if start < 0 {
+		start = max(0, sl.size+start)
+	}
+
+	if end < 0 {
+		end = min(sl.size-1, sl.size+end)
+	}
+
+	result := make([]any, 0)
+
+	if start > end {
+		return result
+	}
+
+	cur := sl.head
+	rank := 0
+
+	for i := sl.level; i >= 0; i-- { // O(log(N))
+		for cur.next[i] != nil && rank+cur.span[i] <= start+1 {
+			rank += cur.span[i]
+			cur = cur.next[i]
+		}
+	}
+
+	for i := start; i <= end && cur != nil; i++ { // O(K)
+		result = append(result, cur.member)
+		cur = cur.next[0] // at the lower level all the elements will be there
+	}
+
+	return result
 }
 
 type SkipListBucket struct {
@@ -192,6 +225,15 @@ func (b *SkipListBucket) Rank(key, member string) int {
 
 	skipList := b.bucket[key]
 	return skipList.Rank(member)
+}
+
+func (b *SkipListBucket) Range(key string, start, end int) []any {
+	if b.bucket[key] == nil {
+		return []any{}
+	}
+
+	skipList := b.bucket[key]
+	return skipList.Range(start, end)
 }
 
 type SetItem struct {
