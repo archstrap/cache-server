@@ -73,9 +73,10 @@ func cmp(memberA, memberB string, scoreA, scoreB float64) int {
 
 func (sl *SkipList) Insert(member string, score float64) int {
 
-	insertedItems := 0
-	if _, ok := sl.index[member]; !ok {
-		insertedItems++
+	insertedItems := 1
+	if _, ok := sl.index[member]; ok {
+		insertedItems--
+		sl.Remove(member)
 	}
 
 	update := make([]*SkipNode, MaxLevel+1)
@@ -126,12 +127,57 @@ func (sl *SkipList) Insert(member string, score float64) int {
 		update[i].span[i]++
 	}
 
-	if sl.index[member] == nil {
-		sl.size++
-	}
+	sl.size++
 	sl.index[member] = newNode
 
 	return insertedItems
+}
+
+func (sl *SkipList) Remove(member string) bool { // O(log(N))
+
+	targetNode, ok := sl.index[member]
+	if !ok {
+		return false
+	}
+
+	update := make([]*SkipNode, MaxLevel+1)
+	rank := make([]int, MaxLevel+1)
+	cur := sl.head
+
+	for i := sl.level; i >= 0; i-- {
+		if i == sl.level {
+			rank[i] = 0
+		} else {
+			rank[i] = rank[i+1]
+		}
+
+		for cur.next[i] != nil && cmp(cur.next[i].member, targetNode.member, cur.next[i].score, targetNode.score) < 0 {
+			rank[i] += cur.span[i]
+			cur = cur.next[i]
+		}
+		update[i] = cur
+	}
+
+	node := update[0].next[0]
+	for i := 0; i <= sl.level; i++ {
+		// cases when the node is present inside the level
+		if update[i].next[i] == node {
+			update[i].span[i] += node.span[i] - 1 // 1 for removing the target node
+			update[i].next[i] = node.next[i]
+		} else { // case when node is not present inside the level
+			update[i].span[i]--
+		}
+	}
+
+	// shrink the level
+	for sl.level > 0 && sl.head.next[sl.level] == nil {
+		sl.level--
+	}
+
+	sl.size--
+	delete(sl.index, member)
+	return true
+
 }
 
 func (sl *SkipList) Rank(member string) int { // O(log(N))
@@ -268,6 +314,18 @@ func (b *SkipListBucket) Score(key, member string) string {
 
 	skipList := b.bucket[key]
 	return skipList.Score(member)
+}
+func (b *SkipListBucket) Remove(key, member string) int {
+	if b.bucket[key] == nil {
+		return 0
+	}
+
+	skipList := b.bucket[key]
+	isRemoved := skipList.Remove(member)
+	if isRemoved {
+		return 1
+	}
+	return 0
 }
 
 type SetItem struct {
