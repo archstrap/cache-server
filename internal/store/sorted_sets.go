@@ -199,7 +199,7 @@ func (sl *SkipList) Score(member string) string {
 		return "-1"
 	}
 
-	return fmt.Sprintf("%f", node.score)
+	return fmt.Sprintf("%g", node.score)
 }
 
 func (sl *SkipList) Size() int { // O(1)
