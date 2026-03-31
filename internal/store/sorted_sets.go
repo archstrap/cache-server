@@ -190,6 +190,10 @@ func (sl *SkipList) Range(start, end int) []any { // O(log(N) + K )
 	return result
 }
 
+func (sl *SkipList) Size() int {
+	return sl.size
+}
+
 type SkipListBucket struct {
 	bucket map[string]*SkipList
 }
@@ -234,6 +238,15 @@ func (b *SkipListBucket) Range(key string, start, end int) []any {
 
 	skipList := b.bucket[key]
 	return skipList.Range(start, end)
+}
+
+func (b *SkipListBucket) Count(key string) int {
+	if b.bucket[key] == nil {
+		return 0
+	}
+
+	skipList := b.bucket[key]
+	return skipList.Size()
 }
 
 type SetItem struct {
