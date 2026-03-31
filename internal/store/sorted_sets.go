@@ -138,31 +138,22 @@ func (sl *SkipList) Rank(member string) int {
 		return -1
 	}
 
-	update := make([]*SkipNode, MaxLevel+1)
-	rank := make([]int, MaxLevel+1)
+	rank := 0
 	cur := sl.head
-	level := MaxLevel + 1
 
 	for i := sl.level; i >= 0; i-- {
 
-		if i == sl.level {
-			rank[i] = 0
-		} else {
-			rank[i] = rank[i+1]
-		}
 		for cur.next[i] != nil && cmp(cur.next[i].member, targetNode.member, cur.next[i].score, targetNode.score) < 0 {
-			rank[i] += cur.span[i]
+			rank += cur.span[i]
 			cur = cur.next[i]
 		}
 		if cur.next[i] != nil && cmp(cur.next[i].member, targetNode.member, cur.next[i].score, targetNode.score) == 0 {
-			rank[i] += cur.span[i]
-			level = i
+			rank += cur.span[i]
 			break
 		}
-		update[i] = cur
 	}
 
-	return rank[level] - 1
+	return rank - 1
 
 }
 
