@@ -315,6 +315,12 @@ func (b *SkipListBucket) Score(key, member string) string {
 	skipList := b.bucket[key]
 	return skipList.Score(member)
 }
+
+func (b *SkipListBucket) Exists(key string) bool {
+	_, ok := b.bucket[key]
+	return ok
+}
+
 func (b *SkipListBucket) Remove(key, member string) int {
 	if b.bucket[key] == nil {
 		return 0

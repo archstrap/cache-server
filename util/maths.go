@@ -14,4 +14,3 @@ func ParseFloat(input string) (float64, *model.RespOutput) {
 
 	return data, nil
 }
-
