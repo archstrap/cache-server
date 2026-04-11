@@ -79,6 +79,8 @@ func parseAnyArrayOutput(data []any) string {
 			result.WriteString(parseStringArrayOutput(innerData))
 		case []any:
 			result.WriteString(parseAnyArrayOutput(innerData)) // recursively
+		case nil:
+			result.WriteString("*-1\r\n") // recursively
 		}
 	}
 

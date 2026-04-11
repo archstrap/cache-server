@@ -2,6 +2,7 @@ package command
 
 import (
 	"fmt"
+	"log/slog"
 	"strconv"
 
 	"github.com/archstrap/cache-server/internal/store"
@@ -26,18 +27,20 @@ func (g *GEOPOS) Process(value *model.RespValue) *model.RespOutput {
 	key := args[1]
 
 	bucket := store.GetSkipListBucket()
-	if !bucket.Exists(key) {
-		return model.NewRespOutput(model.TypeArray, nil)
-	}
-
+	// if !bucket.Exists(key) {
+	// 	return model.NewRespOutput(model.TypeArray, nil)
+	// }
+	//
 	var result []any
 
 	for i := 2; i < len(args); i++ {
 		member := args[i]
+		slog.Info("", slog.Any("member", member))
 		score := bucket.Score(key, member)
 
 		if score == "-1" {
 			result = append(result, nil)
+			continue
 		}
 
 		scores, err := strconv.ParseFloat(score, 64)
