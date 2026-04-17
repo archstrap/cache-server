@@ -7,6 +7,10 @@ type Coordinates struct {
 	Longitude float64
 }
 
+const (
+	RADIUS = 6372797.560856
+)
+
 func compactInt64ToInt32(v uint64) uint32 {
 	result := v & 0x5555555555555555
 	result = (result | (result >> 1)) & 0x3333333333333333
@@ -41,4 +45,24 @@ func Decode(geoCode uint64) Coordinates {
 	gridLongitudeNumber := compactInt64ToInt32(y)
 
 	return convertGridNumbersToCoordinates(gridLatitudeNumber, gridLongitudeNumber)
+}
+
+func DegToRad(x float64) float64 {
+	return x * (math.Pi / 180.0)
+}
+
+func (c1 *Coordinates) GetDistance(c2 *Coordinates) float64 {
+
+	lat1r := DegToRad(c1.Latitude)
+	lat2r := DegToRad(c2.Latitude)
+
+	u := math.Sin((lat1r - lat2r) / 2)
+
+	long1r := DegToRad(c1.Longitude)
+	long2r := DegToRad(c2.Longitude)
+
+	v := math.Sin((long1r - long2r) / 2)
+
+	h := u*u + math.Cos(lat1r)*math.Cos(lat2r)*v*v
+	return 2 * RADIUS * math.Asin(math.Sqrt(h))
 }

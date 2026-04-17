@@ -2,7 +2,6 @@ package command
 
 import (
 	"fmt"
-	"log/slog"
 	"strconv"
 
 	"github.com/archstrap/cache-server/internal/store"
@@ -35,7 +34,6 @@ func (g *GEOPOS) Process(value *model.RespValue) *model.RespOutput {
 
 	for i := 2; i < len(args); i++ {
 		member := args[i]
-		slog.Info("", slog.Any("member", member))
 		score := bucket.Score(key, member)
 
 		if score == "-1" {
