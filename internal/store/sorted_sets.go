@@ -225,6 +225,8 @@ func (sl *SkipList) Range(start, end int) []any { // O(log(N) + K )
 	rank := 0
 
 	for i := sl.level; i >= 0; i-- { // O(log(N))
+		// why start+1
+		// Because rank tracks the head sentinel node which is at position 0 but is not a real node. so real nodes will be always indexed 1
 		for cur.next[i] != nil && rank+cur.span[i] <= start+1 {
 			rank += cur.span[i]
 			cur = cur.next[i]
@@ -315,6 +317,12 @@ func (b *SkipListBucket) Score(key, member string) string {
 	skipList := b.bucket[key]
 	return skipList.Score(member)
 }
+
+func (b *SkipListBucket) Exists(key string) bool {
+	_, ok := b.bucket[key]
+	return ok
+}
+
 func (b *SkipListBucket) Remove(key, member string) int {
 	if b.bucket[key] == nil {
 		return 0
